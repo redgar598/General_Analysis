@@ -1,4 +1,6 @@
 # This is a script to perform WGCNA analysis on 450K DNA methylation data
+
+##magda Thinks this code is pretty
 setwd("~/WGCNA/")
 library(WGCNA)
 allowWGCNAThreads()
