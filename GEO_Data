@@ -1,0 +1,257 @@
+##############
+## Tissue
+##############
+library(GEOmetadb)
+getSQLiteFile()
+con <- dbConnect(SQLite(), "GEOmetadb.sqlite")
+dbListFields(con, "gsm")
+
+x<-dbGetQuery(con, "select title,description,series_id,gsm,source_name_ch1,characteristics_ch1 from gsm where gpl='GPL13534'")
+
+sampl<-x
+
+sampl$tissue<-as.factor(sampl$characteristics_ch1)
+
+levels(sampl$tissue)[grep("CD14|monocytes|monocytes|Monocytes", levels(sampl$tissue))]<-"Monocytes"
+levels(sampl$tissue)[grep("Fibroblast|fibroblast", levels(sampl$tissue))]<-"Fibroblast"
+levels(sampl$tissue)[grep("Tissue_Blood|normal blood sample|blood from|FCB|Newborns|Nonagenarians|prepartum depression", levels(sampl$tissue))]<-"Blood"
+sampl$tissue[grep("blood spot sample|Blood", sampl$description)]<-"Blood"
+levels(sampl$tissue)[grep("B-cell|B-cell|B Cells|B cells|Syndrome", levels(sampl$tissue))]<-"Blood (B cell)"
+levels(sampl$tissue)[grep("lung|Lung", levels(sampl$tissue))]<-"Lung"
+levels(sampl$tissue)[grep("peripheral|Peripheral|PBMC|PBL|leukocyte|Eosinophils|Granulocytes|Neutrophils", levels(sampl$tissue))]<-"Blood (Peripheral)"
+levels(sampl$tissue)[grep("Brain|brain|Oligodendroglioma|astrocytoma|glioblastoma|Medulla_oblongata|Ependymoma|glioma|astrocyte", levels(sampl$tissue))]<-"Brain"
+levels(sampl$tissue)[grep("Liver|liver", levels(sampl$tissue))]<-"Liver"
+levels(sampl$tissue)[grep("Spleen|spleen", levels(sampl$tissue))]<-"Spleen"
+levels(sampl$tissue)[grep("Stomach|stomach", levels(sampl$tissue))]<-"Stomach"
+levels(sampl$tissue)[grep("Thymus|thymus", levels(sampl$tissue))]<-"Thymus"
+levels(sampl$tissue)[grep("Muscle|muscle", levels(sampl$tissue))]<-"Muscle"
+levels(sampl$tissue)[grep("Bladder|bladder", levels(sampl$tissue))]<-"Bladder"
+levels(sampl$tissue)[grep("Kidney|kidney|Ureter|Adrenal|adrenal|nephrogenic|Wilms", levels(sampl$tissue))]<-"Kidney"
+levels(sampl$tissue)[grep("Heart|heart|umbilical|Coronary_artery|Aorta", levels(sampl$tissue))]<-"Blood Vessel"
+levels(sampl$tissue)[grep("Adipose|adipose", levels(sampl$tissue))]<-"Adipose"
+levels(sampl$tissue)[grep("Somatic.Primary|panel:", levels(sampl$tissue))]<-"Somatic Cell Line"
+levels(sampl$tissue)[grep("Lymph", levels(sampl$tissue))]<-"Lymph"
+levels(sampl$tissue)[grep("Pancreas|pancreas", levels(sampl$tissue))]<-"Pancreas"
+levels(sampl$tissue)[grep("Prostate|prostate|PrEC|LNCaP", levels(sampl$tissue))]<-"Prostate"
+levels(sampl$tissue)[grep("oral|Oral|OSCC|Tongue|tongue|HNSCC|saliva", levels(sampl$tissue))]<-"Oral"
+levels(sampl$tissue)[grep("iPS|pluripotent|ES|stem cell", levels(sampl$tissue))]<-"Stem Cell"
+levels(sampl$tissue)[grep("trophoblast|Placenta|placental", levels(sampl$tissue))]<-"Placental"
+levels(sampl$tissue)[grep("bone marrow|marrow_yellow|Bone", levels(sampl$tissue))]<-"Bone or Bone Marrow"
+levels(sampl$tissue)[grep("Hydatidiform|Gastric_mucosa", levels(sampl$tissue))]<-"Epithelial"
+levels(sampl$tissue)[grep("SP2|SP4", levels(sampl$tissue))]<-"Sperm"
+levels(sampl$tissue)[grep("NT2", levels(sampl$tissue))]<-"Testes"
+sampl$tissue[grep("lung", sampl$description)]<-"Lung"
+levels(sampl$tissue)[grep("colon|colo", levels(sampl$tissue))]<-"Colon"
+levels(sampl$tissue)[grep("Pituitary", levels(sampl$tissue))]<-"Pituitary"
+levels(sampl$tissue)[grep("cervix|Cervix", levels(sampl$tissue))]<-"Cervix"
+levels(sampl$tissue)[grep("Joint_cartilage", levels(sampl$tissue))]<-"Cartilage"
+levels(sampl$tissue)[grep("Ischiatic_nerve", levels(sampl$tissue))]<-"CNS"
+## did not get all the levels for GEO data (gave up, go back)
+
+sampl$tissue<-as.factor(as.character(sampl$tissue))
+
+sampl$source_name_ch1 <- NULL
+sampl$description <- NULL
+sampl$characteristics_ch1 <- NULL
+
+## Cord blood
+levels(sampl$tissue)[grep("cord|Cord", levels(sampl$tissue))]<-"Cord"
+sampl$tissue[grep("cord|Cord", sampl$source_name_ch1)]<-"Cord"
+sampl$tissue[grep("cord|Cord", sampl$title)]<-"Cord"
+sampl$tissue[grep("cord|Cord", sampl$description)]<-"Cord"
+
+GEO_cord<-subset(sampl, tissue=="Cord")
+unique(GEO_cord$series_id)
+
+## twins
+sampl$twin<-as.factor(sampl$title)
+levels(sampl$twin)[grep("twin|Twin|Twins|twins|monozygotic", levels(sampl$twin))]<-"Twin"
+
+GEO_twin<-subset(sampl, twin=="Twin")
+
+
+# Just monocytes
+GEO_monocytes<-subset(sampl, tissue=="Monocytes")
+
+save(GEO_monocytes, file="~/Documents/Aging/Confirmation_Cohort/GEO_monocytes.RData")
+
+load("GEO_monocytes.RData")
+
+### One series
+GSE59250_meta<-subset(x, series_id=="GSE59250")
+GSE59250_meta$characteristics_ch1<-NULL
+GSE59250_meta$description<-NULL
+save(GSE59250_meta, file="~/Documents/Aging/Confirmation_Cohort/GSE59250/GSE59250_meta.RData")
+
+
+##############
+## Disease
+##############
+
+disease<-read.csv("samples_tissue", sep="\t")
+totals_disease<-as.data.frame(table(disease$Disease))
+totals_disease$embryonic_germ_layer<-"Not Applicable"
+
+# Stack
+totals_disease<-totals_disease[order(totals_disease$Freq),]
+col=c(brewer.pal(8,"Spectral"))
+ggplot(totals_disease, aes(x=factor(1), y=Freq, fill=Var1))+
+  geom_bar(stat="identity",width=1, color="black")+ 
+  scale_fill_manual(values=col,name="Disease State")+theme_bw()+
+  theme(panel.border= element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),        
+        axis.title.x = element_text(size=14),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())+ ylab("Samples")+xlab("Disease")
+
+
+
+
+
+
+##############
+## Tissue on $50k (all studies)
+##############
+setwd("~/Documents/Gene_expression_omnibus/Summary/Samples_tissues")
+library(GEOmetadb)
+getSQLiteFile()
+con <- dbConnect(SQLite(), "GEOmetadb.sqlite")
+dbListFields(con, "gsm")
+
+x<-dbGetQuery(con, "select description, series_id,gsm,characteristics_ch1,source_name_ch1 from gsm where gpl='GPL13534'")
+
+
+
+sampl<-x
+# All expect GSE40790 (updated since download)
+
+sampl$tissue<-as.factor(sampl$source_name_ch1)
+
+levels(sampl$tissue)[grep("Whole blood|whole blood", levels(sampl$tissue))]<-"Blood (Whole)"
+levels(sampl$tissue)[grep("Fibroblast|fibroblast|genomic DNA from WG|NHDF-neo|ProgFib|rTreg|AG|HCF", levels(sampl$tissue))]<-"Fibroblast"
+levels(sampl$tissue)[grep("Tissue_Blood|CD|normal blood sample|blood from|FCB|Newborns|chondrosarcoma|Buffy|NA|naive|Reconstruction|Primary Leukemia|_pool|Nonagenarians|pre-B ALL|Blood|blood|PR01|lymphoma|MethDNANeg|NB4", levels(sampl$tissue))]<-"Blood"
+sampl$tissue[grep("blood spot sample|CD14", sampl$description)]<-"Blood"
+levels(sampl$tissue)[grep("B-cell|B-cell|B Cells|B cells|Syndrome", levels(sampl$tissue))]<-"Blood (B cell)"
+levels(sampl$tissue)[grep("lung|Lung|A549", levels(sampl$tissue))]<-"Lung"
+levels(sampl$tissue)[grep("peripheral|Peripheral|PBMC|PBL|leukocyte|Eosinophils|Granulocytes|Neutrophils|_R0", levels(sampl$tissue))]<-"Blood (Peripheral)"
+levels(sampl$tissue)[grep("Brain|brain|Oligodendroglioma|cerebellum|medulloblastoma|glioma|BE2_C|astrocytoma|mHGA|glioblastomas|cortex|neuron|meningiomas|Multiple sclerosis|PNET|prefrontalcortex|PFSK-1|SK-N-MC|SK-N-SH|GLIOMA|Glioblastoma|astrocytes|NH-A", levels(sampl$tissue))]<-"Brain"
+levels(sampl$tissue)[grep("Liver|liver|Bile|hepatocellular|HCC tumor|HepG2|Hepatocytes|CHC|CHC591N|adjacent non-tumor tissue", levels(sampl$tissue))]<-"Liver"
+levels(sampl$tissue)[grep("Spleen|spleen", levels(sampl$tissue))]<-"Spleen"
+levels(sampl$tissue)[grep("Stomach|stomach|GIST|intestine", levels(sampl$tissue))]<-"Gastrointestinal Tract"
+levels(sampl$tissue)[grep("Thymus|thymus", levels(sampl$tissue))]<-"Thymus"
+levels(sampl$tissue)[grep("Muscle|muscle|MUSCULARIS|Leiomyoma|myoblasts|SKMC", levels(sampl$tissue))]<-"Muscle"
+levels(sampl$tissue)[grep("Bladder|bladder", levels(sampl$tissue))]<-"Bladder"
+levels(sampl$tissue)[grep("Kidney|kidney|Ureter|Adrenal|adrenal|RPTEC|HRE", levels(sampl$tissue))]<-"Kidney"
+levels(sampl$tissue)[grep("Heart|heart|umbilical|HCM|HUVEC", levels(sampl$tissue))]<-"Blood Vessel"
+levels(sampl$tissue)[grep("Adipose|adipose|VAT_MetS", levels(sampl$tissue))]<-"Adipose"
+levels(sampl$tissue)[grep("Somatic.Primary|U937|U87|GM|HCT116|SK-N-SH_RA|SssI-treated DNA|H1 Cell Line|HCT-116|HEK293|HeLa-S3|HL-60|DKO1|KG1A|MSC|ETMR|786-O Cell Line|AG04450|IMR-90|K562|KYSE180|IMR90", levels(sampl$tissue))]<-"Somatic Cell Line"
+levels(sampl$tissue)[grep("Lymph|lymph|lymphoblast|HapMap_Yoruba", levels(sampl$tissue))]<-"Lymph"
+levels(sampl$tissue)[grep("Pancreas|PANC-1", levels(sampl$tissue))]<-"Pancreas"
+levels(sampl$tissue)[grep("Prostate|prostate|PrEC|LNCaP", levels(sampl$tissue))]<-"Prostate"
+levels(sampl$tissue)[grep("oral|Oral|OSCC|Tongue|tongue|HNSCC|Buccal|buccal|Saliva", levels(sampl$tissue))]<-"Oral"
+sampl$tissue[grep("YRI and CEU are the HapMap", sampl$description)]<-"Oral"
+levels(sampl$tissue)[grep("iPS|pluripotent|ES|stem cell|Stem Cell|ips|hes|Neural precursor cells", levels(sampl$tissue))]<-"Stem Cell"
+levels(sampl$tissue)[grep("trophoblast|Umbilical", levels(sampl$tissue))]<-"Trophoblast"
+levels(sampl$tissue)[grep("bone marrow|Bone Marrow|AML|xenograft|osteoclasts|Bone marrow", levels(sampl$tissue))]<-"Bone Marrow"
+levels(sampl$tissue)[grep("Hydatidiform|urothelium|melanocytes|Cholangiocarcinoma|skin|SAEC|EpiC|NHBE|Primary melanoma|Skin|BJ|ECC-1", levels(sampl$tissue))]<-"Epithelial"
+levels(sampl$tissue)[grep("SP2|SP4|Sperm|sperm", levels(sampl$tissue))]<-"Sperm"
+levels(sampl$tissue)[grep("NT2|testicular", levels(sampl$tissue))]<-"Testes"
+sampl$tissue[grep("lung", sampl$description)]<-"Lung"
+levels(sampl$tissue)[grep("colon|colo|Caco-2", levels(sampl$tissue))]<-"Colon"
+levels(sampl$tissue)[grep("breast|T-47D|Breast|MCF7 Cell Line|MCF10A-Er-Src|MDA-MB-231 cells|MCF-7|HMEC", levels(sampl$tissue))]<-"Breast"
+levels(sampl$tissue)[grep("placental|Placenta|placenta", levels(sampl$tissue))]<-"Placenta"
+levels(sampl$tissue)[grep("ovarian|ovcar|embryonal|oocytes", levels(sampl$tissue))]<-"Ovary"
+levels(sampl$tissue)[grep("PHEO_AG_HS", levels(sampl$tissue))]<-"Neck, Throat, Abdomen"
+levels(sampl$tissue)[grep("Myomet", levels(sampl$tissue))]<-"Uterus"
+levels(sampl$tissue)[grep("pituitary", levels(sampl$tissue))]<-"Pituitary"
+levels(sampl$tissue)[grep("amino", levels(sampl$tissue))]<-"Amniotic"
+levels(sampl$tissue)[grep("cervix", levels(sampl$tissue))]<-"Cervix"
+
+
+sampl$tissue[grep("blood", sampl$characteristics_ch1)]<-"Blood"
+sampl$tissue[grep("Ependymoma|glioblastomas|Medulla_oblongata|Ischiatic_nerve", sampl$characteristics_ch1)]<-"Brain"
+sampl$tissue[grep("hepatocellular adenoma|cca|CCA|liver", sampl$characteristics_ch1)]<-"Liver"
+sampl$tissue[grep("bone marrow", sampl$description)]<-"Bone Marrow"
+sampl$tissue[grep("muscle|omentum|Joint_cartilage", sampl$characteristics_ch1)]<-"Muscle"
+sampl$tissue[grep("pancreas", sampl$characteristics_ch1)]<-"Pancreas"
+sampl$tissue[grep("scfat|Adipose", sampl$characteristics_ch1)]<-"Adipose"
+sampl$tissue[grep("spleen", sampl$characteristics_ch1)]<-"Spleen"
+sampl$tissue[grep("_artery|Aorta", sampl$characteristics_ch1)]<-"Blood Vessel"
+sampl$tissue[grep("Bone", sampl$characteristics_ch1)]<-"Bone Marrow"
+sampl$tissue[grep("Gastric_mucosa|Gall", sampl$characteristics_ch1)]<-"Gastrointestinal Tract"
+sampl$tissue[grep("Lymph_node", sampl$characteristics_ch1)]<-"Lymph"
+sampl$tissue[grep("Tonsils|buccal|saliva", sampl$characteristics_ch1)]<-"Oral"
+sampl$tissue[grep("Bladder", sampl$characteristics_ch1)]<-"Bladder"
+sampl$tissue[grep("hair", sampl$characteristics_ch1)]<-"Epithelial"
+
+
+
+sampl$tissue<-as.factor(as.character(sampl$tissue))
+
+# Check 13177 sample
+levels(sampl$tissue)
+sampl[which(sampl$tissue=='PANC-1'),]
+
+
+## Species
+sampl[which(sampl$gsm=='GSM1195053'),]
+
+sampl$species<-'Homo sapien'
+sampl$species[grep("Macaca mulatta", sampl$source_name_ch1)]<-"Macaca mulatta"
+sampl$species[grep("Mus musculus", sampl$source_name_ch1)]<-"Mus musculus"
+sampl$species[grep("Pan troglodytes", sampl$source_name_ch1)]<-"Pan troglodytes"
+
+
+
+
+
+
+#### Brain Diseases 1451 samples
+brain_sampl<-subset(sampl, tissue=="Brain")
+# All expect GSE40790 (updated since download)
+
+brain_sampl$Disease<-as.factor(brain_sampl$characteristics_ch1)
+#healthy
+levels(brain_sampl$Disease)[grep("healthy|Healthy|Normal|normal|Control|NORM|Health|non-neoplastic|dopamine neuron cells|methylation type", levels(brain_sampl$Disease))]<-"Healthy"
+brain_sampl$Disease[grep("Autopsy", brain_sampl$source_name_ch1)]<-"Healthy"
+#cancer
+levels(brain_sampl$Disease)[grep("tumor|oma|cancer|Cancer", levels(brain_sampl$Disease))]<-"Cancer"
+brain_sampl$Disease[grep("tumor|oma|cancer|Cancer", brain_sampl$description)]<-"Cancer"
+#other
+levels(brain_sampl$Disease)[grep("Depression", levels(brain_sampl$Disease))]<-"Depression"
+levels(brain_sampl$Disease)[grep("diagnosis: FTD", levels(brain_sampl$Disease))]<-"Dementia"
+levels(brain_sampl$Disease)[grep("diagnosis: AD", levels(brain_sampl$Disease))]<-"Alzheimer's"
+levels(brain_sampl$Disease)[grep("diagnosis: CBD", levels(brain_sampl$Disease))]<-"Corticobasal degeneration"
+levels(brain_sampl$Disease)[grep("diagnosis: PSP", levels(brain_sampl$Disease))]<-"Progressive Supranuclear Palsy"
+levels(brain_sampl$Disease)[grep("status: Alcohol Abuse", levels(brain_sampl$Disease))]<-"Alcohol Abuse"
+levels(brain_sampl$Disease)[grep("status: Alcohol dependence", levels(brain_sampl$Disease))]<-"Alcohol Dependence"
+levels(brain_sampl$Disease)[grep("disease status: Multiple sclerosis", levels(brain_sampl$Disease))]<-"Multiple sclerosis"
+
+brain_sampl$Disease<-as.factor(as.character(brain_sampl$Disease))
+
+
+# Check
+levels(brain_sampl$Disease)
+brain_sampl[which(brain_sampl$Disease=='tissue: Brain;\tmethylation type: 5-hmc'),]
+
+
+brain_sampl$source_name_ch1 <- NULL
+brain_sampl$description <- NULL
+brain_sampl$characteristics_ch1 <- NULL
+
+save(brain_sampl, file="Brain_samples_diseases.RData")
+
+#30 non human brain samples
+# 1421 human brain samples
+table(brain_sampl$Disease)
+
+
+
+
+
+######
+
+levels(sampl$tissue)[grep("glioblastoma|Glioblastoma|glioma", levels(sampl$tissue))]<-"Brain"
+
+
