@@ -19,7 +19,8 @@ library(lme4)
 library(gridExtra)
 library(RCurl)
 library(WGCNA)
-enableWGCNAThreads()
+enableWGCNAThreads() ## doesnt work through R studio. 
+                      #Run the blockwiseModules() step in terminal or basic R with enableWGCNAThreads() if possible.
 ```
 
 # Load data
