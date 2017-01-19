@@ -138,3 +138,19 @@ plot(x,y,lwd=2)
 fit <- lm(y~x)
 abline(fit$coef,lwd=2)
 
+########################
+## Exercises
+########################
+
+# Q1
+#6
+
+#Q2
+ggplot(InsectSprays, aes(spray, count))+geom_boxplot(aes(fill=spray),outlier.size = NA)+theme_bw()+ 
+  geom_point(shape=21, color="black", fill="grey",position=position_jitter(w=0.25))
+
+#Q3
+url <- "http://courses.edx.org/c4x/HarvardX/PH525.1x/asset/skew.RData"
+filename <- "skew.RData"
+if (!file.exists(filename)) download(url,filename)
+load(filename)
