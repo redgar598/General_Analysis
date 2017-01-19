@@ -138,6 +138,7 @@ plot(x,y,lwd=2)
 fit <- lm(y~x)
 abline(fit$coef,lwd=2)
 
+
 ########################
 ## Exercises
 ########################
@@ -145,12 +146,61 @@ abline(fit$coef,lwd=2)
 # Q1
 #6
 
-#Q2
+# Q2
 ggplot(InsectSprays, aes(spray, count))+geom_boxplot(aes(fill=spray),outlier.size = NA)+theme_bw()+ 
   geom_point(shape=21, color="black", fill="grey",position=position_jitter(w=0.25))
 
-#Q3
+# Q3
 url <- "http://courses.edx.org/c4x/HarvardX/PH525.1x/asset/skew.RData"
 filename <- "skew.RData"
 if (!file.exists(filename)) download(url,filename)
 load(filename)
+
+dat<-as.data.frame(dat)
+dat_plt<-melt(dat)
+
+ggplot(dat_plt, aes(variable, value))+geom_violin(fill="lightgrey")+geom_boxplot(aes(fill=variable),outlier.size = NA, width=0.15)+theme_bw()
+
+#column 4 and 9 are weird, and column 4 is skewed positively
+
+# Q4
+#column 9 is negatively skewed
+
+# Q5
+library(dplyr)
+data(nym.2002, package="UsingR")
+
+ggplot(nym.2002, aes(gender, time))+geom_violin(fill="lightgrey")+geom_boxplot(aes(fill=gender),outlier.size = NA, width=0.25)+theme_bw()
+ggplot(nym.2002, aes(time, color=gender))+geom_density(size=1)+theme_bw()
+tapply(nym.2002$time, nym.2002$gender, mean)
+#C
+
+# Q6
+nym.2002 %>%
+  group_by(gender) %>%
+  summarize(cor(age, time, method="pearson"))
+
+#males 0.243; females 0.244
+
+# Q8
+#scatter
+ggplot(nym.2002, aes(age, time, fill=gender))+geom_point(shape=21, color="black")+theme_bw()+stat_smooth(method="lm", se=F)
+
+# boxplot
+mround <- function(x,base){ 
+  base*round(x/base) 
+} 
+
+groups <- split(nym.2002$time,mround(nym.2002$age,5))
+
+library(reshape2)
+plt<-melt(groups)
+plt$Age_Group<-as.numeric(plt$L1)
+ggplot(plt, aes(as.factor(Age_Group), value, fill=Age_Group))+geom_boxplot()+theme_bw()+ylab("Time")
+# A
+
+# Q9
+#D
+
+#Q10
+#D
