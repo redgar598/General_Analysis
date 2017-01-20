@@ -204,3 +204,153 @@ ggplot(plt, aes(as.factor(Age_Group), value, fill=Age_Group))+geom_boxplot()+the
 
 #Q10
 #D
+
+
+########### 
+## Robust Summaries
+########### 
+
+set.seed(1)
+x=c(rnorm(100,0,1)) ##real distribution
+x[23] <- 100 ##mistake made in 23th measurement
+boxplot(x)
+cat("The average is",mean(x),"and the SD is",sd(x))
+median(x)
+
+# Spearman correlation
+set.seed(1)
+x=c(rnorm(100,0,1)) ##real distribution
+x[23] <- 100 ##mistake made in 23th measurement
+y=c(rnorm(100,0,1)) ##real distribution
+y[23] <- 84 ##similar mistake made in 23th measurement
+library(rafalib)
+mypar()
+plot(x,y,main=paste0("correlation=",round(cor(x,y),3)),pch=21,bg=1,xlim=c(-3,100),ylim=c(-3,100))
+abline(0,1)
+
+mypar(1,2)
+plot(x,y,main=paste0("correlation=",round(cor(x,y),3)),pch=21,bg=1,xlim=c(-3,100),ylim=c(-3,100))
+plot(rank(x),rank(y),main=paste0("correlation=",round(cor(x,y,method="spearman"),3)),pch=21,bg=1,xlim=c(-3,100),ylim=c(-3,100))
+abline(0,1)
+
+## log ratios
+x <- 2^(rnorm(100))
+y <- 2^(rnorm(100))
+ratios <- x / y
+
+mypar(1,2)
+hist(ratios)
+logratios <- log2(ratios)
+hist(logratios)
+
+
+########### 
+## Wilcoxon Rank Sum Test
+########### 
+
+set.seed(779) ##779 picked for illustration purposes
+N=25
+x<- rnorm(N,0,1)
+y<- rnorm(N,0,1)
+x[1] <- 5
+x[2] <- 7
+cat("t-test pval:",t.test(x,y)$p.value)
+cat("Wilcox test pval:",wilcox.test(x,y)$p.value)
+
+library(rafalib)
+mypar(1,2)
+stripchart(list(x,y),vertical=TRUE,ylim=c(-7,7),ylab="Observations",pch=21,bg=1)
+abline(h=0)
+xrank<-rank(c(x,y))[seq(along=x)]
+yrank<-rank(c(x,y))[-seq(along=y)]
+stripchart(list(xrank,yrank),vertical=TRUE,ylab="Ranks",pch=21,bg=1,cex=1.25)
+ws <- sapply(x,function(z) rank(c(z,y))[1]-1)
+text( rep(1.05,length(ws)), xrank, ws, cex=0.8)
+
+W <-sum(ws)
+
+
+########################
+## Exercises
+########################
+data(ChickWeight)
+head(ChickWeight)
+plot( ChickWeight$Time, ChickWeight$weight, col=ChickWeight$Diet)
+
+ggplot(ChickWeight, aes(Time, weight, fill=Diet))+geom_point(shape=21, size=2,color="black")+theme_bw()
+
+chick = reshape(ChickWeight, idvar=c("Chick","Diet"), timevar="Time",
+                direction="wide")
+
+head(chick)
+chick = na.omit(chick)
+
+#Q1
+no_out<-chick$weight.4
+with_out<-c(chick$weight.4,3000)
+
+mean(with_out)/mean(no_out)
+# 2.06 fold change in mean
+
+#Q2 
+median(with_out)/median(no_out)
+# no change
+
+
+#Q3
+sd(with_out)/sd(no_out)
+# 101.3 fold change in mean
+
+#Q4 
+mad(with_out)/mad(no_out)
+# no change
+
+#Q5
+ggplot(chick, aes(weight.4, weight.21))+geom_point(shape=21, size=2,fill="cornflowerblue")+theme_bw()
+
+cor(chick$weight.4, chick$weight.21)
+cor(c(chick$weight.4,3000),c(chick$weight.21,3000))
+
+cor(chick$weight.4, chick$weight.21)/cor(c(chick$weight.4,3000),c(chick$weight.21,3000))
+#0.42 fold change
+
+#Q6
+x=chick$weight.4
+y=chick$weight.21
+
+t.test(x,y)
+wilcox.test(x,y)
+
+#add outlier
+x=c(chick$weight.4,3000)
+y=c(chick$weight.21,3000)
+
+t.test(x,y)
+wilcox.test(x,y)
+
+#Q8
+x=chick$weight.4
+y=chick$weight.21
+
+library(rafalib)
+mypar(1,3)
+boxplot(x,y)
+boxplot(x,y+10)
+boxplot(x,y+100)
+
+t.test(x,y)$statistic
+t.test(x,y+10)$statistic
+t.test(x,y+100)$statistic
+-15.78146-(-24.20906)
+
+#Q9
+wilcox.test(x,y)$statistic
+wilcox.test(x,y+10)$statistic
+wilcox.test(x,y+100)$statistic
+
+t.test(c(1,2,3) , c(4,5,6))
+wilcox.test(c(1,2,3) , c(4,5,6))
+
+#Q10
+t.test(c(1,2,3) , c(400,500,600))
+wilcox.test(c(1,2,3) , c(400,500,600))
