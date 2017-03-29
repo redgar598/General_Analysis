@@ -1,0 +1,98 @@
+---
+title: "locFDR"
+author: "Redgar"
+date: "March 29, 2017"
+output: html_document
+---
+
+Local FDR for identification of outliers
+
+# Hannum 2013 mol.cell
+Methylation quality control
+We used principal component (PC) analysis to identify and remove outlier samples. We
+converted each sample into a z-score statistic, based on the squared distance of its 1st PC
+from the population mean. The z-statistic was converted to a false-discovery rate using the
+Gaussian cumulative distribution and the Benjamini-Hochberg procedure (Benjamini and
+Hochberg, 1995). Samples falling below an FDR of 0.2 were designated at outliers and
+removed. This filtering procedure was performed iteratively until no samples were
+determined to be an outlier. A total of 24 samples were removed in this manner.
+
+
+The PCA to run locfdr on
+```{r}
+library(locfdr)
+
+
+### PCA
+Beta_sample_clean<-EL_CG_Clean_mnImputed 
+
+PCA<-as.data.frame(unclass(princomp(Beta_sample_clean)$loadings))
+
+# Match to meta data
+meta_ordered<-meta[which(meta$Sample_Name%in%colnames(Beta_sample_clean)),]
+meta_ordered<-meta_ordered[match(colnames(Beta_sample_clean), meta_ordered$Sample_Name),]
+
+# 2nd comp sex (mind the mix ups)
+ggplot(PCA,aes(Comp.1,Comp.2, size=meta_ordered$Dataset, color=meta_ordered$gender))+geom_point(shape=19)+theme_bw()+scale_size_manual(values=c(3,5))
+
+# Hannum method remove PCA based outliers
+zstat_comp1<-((PCA$Comp.1-mean(PCA$Comp.1))/sd(PCA$Comp.1))
+
+w <- locfdr(zstat_comp1)
+w$fp0
+
+which(w$fdr < 0.2)## good sample line (kinda random threshold)
+
+    # Don't remember what these lines do
+    # sum(which(w$fdr < 0.2) > 200)/sum(w$fdr < 0.2)
+    # w$mat[which(w$mat[, "fdr"] < 0.2)[1], "Fdrright"]
+
+outmeta<-meta_ordered[which(w$fdr < 0.2),]
+outmeta$PCA<-"FDR<0.2"
+inmeta<-meta_ordered[which(!(w$fdr < 0.2)),]
+inmeta$PCA<-"FDR>0.2"
+
+outliers<-as.character(outmeta$Sample_Name)
+
+meta_out<-rbind(outmeta,inmeta)
+meta_out<-meta_out[match(colnames(Beta_sample_clean), meta_out$Sample_Name),]
+
+# Plot PCA colored by whether they were considered an outlier by locFDR
+ggplot(PCA,aes(Comp.1,Comp.2, color=meta_out$PCA))+geom_point(shape=19, size=3)+theme_bw()+scale_size_manual(values=c(3,5))
+```
+
+Advised to run locFDR itteratively until there are no outliers detected, in EL_CG only one round of outlier removal was necessary. By the second round no outliers were detected
+```{r}
+## remove outliers and rerun PCA
+Beta_sample_clean_outrm<-EL_CG_Clean_mnImputed[,which(!(colnames(EL_CG_Clean_mnImputed)%in%outliers))]
+
+## Repeat same code to see if any outliers called this time
+PCA2<-as.data.frame(unclass(princomp(Beta_sample_clean_outrm)$loadings))
+meta_ordered<-meta[which(meta$Sample_Name%in%colnames(Beta_sample_clean_outrm)),]
+meta_ordered<-meta_ordered[match(colnames(Beta_sample_clean_outrm), meta_ordered$Sample_Name),]
+zstat_comp1<-((PCA2$Comp.1-mean(PCA2$Comp.1))/sd(PCA2$Comp.1))
+w <- locfdr(zstat_comp1)
+w$fp0
+which(w$fdr < 0.2)## good line
+sum(which(w$fdr < 0.2) > 200)/sum(w$fdr < 0.2)
+w$mat[which(w$mat[, "fdr"] < 0.2)[1], "Fdrright"]
+outmeta<-meta_ordered[which(w$fdr < 0.2),]
+outmeta$PCA<-"FDR<0.2"
+inmeta<-meta_ordered[which(!(w$fdr < 0.2)),]
+inmeta$PCA<-"FDR>0.2"
+meta_out<-rbind(outmeta,inmeta)
+meta_out<-meta_out[match(colnames(Beta_sample_clean_outrm), meta_out$Sample_Name),]
+ggplot(PCA,aes(Comp.1,Comp.2, color=meta_out$PCA))+geom_point(shape=19, size=3)+theme_bw()+scale_size_manual(values=c(3,5))
+
+
+# 3rd comp?
+ggplot(PCA,aes(Comp.2,Comp.3, size=meta_ordered$Dataset, color=meta_ordered$ethnicity.bin))+geom_point(shape=19)+theme_bw()+scale_size_manual(values=c(3,5))
+
+# 4th comp ethnicity
+ggplot(PCA,aes(Comp.3,Comp.4, size=meta_ordered$Dataset, color=meta_ordered$ethnicity.bin))+geom_point(shape=19)+theme_bw()+scale_size_manual(values=c(3,5))
+
+# 5th comp?
+ggplot(PCA,aes(Comp.4,Comp.5, size=meta_ordered$Dataset, color=meta_ordered$age))+geom_point(shape=19)+theme_bw()+scale_size_manual(values=c(3,5))
+```
+
+
