@@ -1,0 +1,277 @@
+---
+title: "Meeting April"
+author: "Redgar"
+date: "April 3, 2017"
+output: html_document
+---
+
+```{r}
+setwd("~/Documents/Side/DAWG/")
+library(rafalib)
+library(UsingR)
+```
+# Excercise 1
+```{r}
+g = 9.8
+h0 = 56.67
+v0 = 0
+n = 25
+tt = seq(0,3.4,len=n)
+y = h0 + v0 *tt - 0.5* g*tt^2 + rnorm(n,sd=1)
+
+X = cbind(1,tt,tt^2)
+A = solve(crossprod(X))%*%t(X)
+
+# 1 C
+-2 * (A %*% y) [3]
+
+# 2  issue:got same as sam not as alex
+se<-function(x) sd(x)/sqrt(length(x))
+
+est_g<-function(x) {
+  y = h0 + v0 *tt - 0.5* g*tt^2 + rnorm(n,sd=1)
+  X = cbind(1,tt,tt^2)
+  A = solve(crossprod(X))%*%t(X)
+  -2 * (A %*% y) [3]
+}
+
+g_estimates<-replicate(100000,est_g(1), simplify = "array")
+se(g_estimates)
+
+# 3
+
+x = father.son$fheight
+y = father.son$sheight
+n = length(y)
+
+N = 50
+index = sample(n,N)
+sampledat = father.son[index,]
+x = sampledat$fheight
+y = sampledat$sheight
+betahat = lm(y~x)$coef
+slope = lm(y~x)$coef[2]
+slope
+
+slope_height<-function(x){
+  N = 50
+  index = sample(n,N)
+  sampledat = father.son[index,]
+  x = sampledat$fheight
+  y = sampledat$sheight
+  betahat = lm(y~x)$coef
+  slope = lm(y~x)$coef[2]
+  slope
+}
+
+
+slope_estimates<-replicate(10000,slope_height(1), simplify = "array")
+se(slope_estimates)
+
+# 4 C
+
+x = father.son$fheight
+y = father.son$sheight
+
+mean((y - mean(y))*(x-mean(x)))
+```
+
+# The design matrix
+```{r}
+group <- factor( c(1,1,2,2) )
+model.matrix(~ group)
+
+diet <- factor(c(1,1,1,1,2,2,2,2))
+sex <- factor(c("f","f","m","m","f","f","m","m"))
+model.matrix(~ diet + sex)
+```
+
+
+
+
+
+
+### High fat vs low fat design matrix
+```{r}
+dat <- read.csv("femaleMiceWeights.csv") ##previously downloaded
+stripchart(dat$Bodyweight ~ dat$Diet, vertical=TRUE, method="jitter",main="Bodyweight over Diet")
+levels(dat$Diet)
+
+X <- model.matrix(~ Diet, data=dat)
+head(X)
+
+Y <- dat$Bodyweight
+X <- model.matrix(~ Diet, data=dat)
+solve(t(X) %*% X) %*% t(X) %*% Y
+#These coefficients are the average of the control group and the difference of the averages:
+    ## see manually 
+    s <- split(dat$Bodyweight, dat$Diet)
+    mean(s[["chow"]])
+    mean(s[["hf"]]) - mean(s[["chow"]])
+
+# now with lm (but this lm is simply and just a fancy t-test)
+fit <- lm(Bodyweight ~ Diet, data=dat)
+summary(fit)
+(coefs <- coef(fit))
+
+summary(fit)$coefficients
+
+# now as t test (you get the same t statistic either way)
+ttest <- t.test(s[["hf"]], s[["chow"]], var.equal=TRUE)
+summary(fit)$coefficients[2,3]
+
+ttest$statistic
+```
+
+## Excercise
+```{r}
+# 1
+Nx=5
+Ny=7
+X <- cbind(rep(1,Nx + Ny),rep(c(0,1),c(Nx, Ny)))
+
+(t(X) %*% X)[1,1]
+
+#2
+(t(X) %*% X) #7
+```
+
+
+# Variance-covariance matrix
+```{r}
+x <- father.son$fheight
+y <- father.son$sheight
+n <- length(y)
+
+# Manual SE
+n <- nrow(father.son)
+N <- 50
+index <- sample(n,N)
+sampledat <- father.son[index,]
+x <- sampledat$fheight
+y <- sampledat$sheight
+X <- model.matrix(~x)
+N <- nrow(X)
+p <- ncol(X)
+XtXinv <- solve(crossprod(X))
+resid <- y - X %*% XtXinv %*% crossprod(X,y)
+s <- sqrt( sum(resid^2)/(N-p))
+ses <- sqrt(diag(XtXinv))*s
+
+# lm SE
+summary(lm(y~x))$coef[,2]
+```
+
+# Excercises
+```{r}
+library(UsingR)
+N <- 50
+set.seed(1)
+index <- sample(n,N)
+sampledat <- father.son[index,]
+x <- sampledat$fheight
+y <- sampledat$sheight
+betahat <- lm(y~x)$coef
+
+#1
+fit <- lm(y ~ x)
+fit$fitted.values
+
+# manual
+X <- model.matrix(~x)
+XtXinv <- solve(crossprod(X))
+resid <- y - X %*% XtXinv %*% crossprod(X,y)
+sum(resid^2)
+
+# using lm
+sum(fit$residuals^2)
+
+
+
+#2
+sum(resid^2)/48
+
+
+
+#3
+N <- 50
+X <- cbind(rep(1,N), x)
+
+# or
+X <- model.matrix(~x)
+solve(t(X) %*% X)[1,1]
+
+
+#4
+sqrt(diag(solve(t(X) %*% X)) * (sum(resid^2)/48))
+#standard are slope
+sqrt(diag(solve(t(X) %*% X)) * (sum(resid^2)/48))[2]
+
+## also present in lm
+summary(fit)
+```
+
+
+
+
+
+
+
+
+
+### Interactions and contrasts spider legs!!! 
+###### pg 196
+```{r}
+url <- "https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/spider_wolff_gorb_2013.csv"
+filename <- "spider_wolff_gorb_2013.csv"
+library(downloader)
+if (!file.exists(filename)) download(url, filename)
+spider <- read.csv(filename, skip=1)
+
+table(spider$leg,spider$type)
+
+# extra fun colors
+library("ggsci")
+
+ggplot(spider, aes(type, friction, fill=type))+geom_boxplot()+theme_bw()+facet_wrap(~leg, nrow=1)+scale_fill_simpsons()
+```
+
+Linear model with one variable
+```{r}
+spider.sub <- spider[spider$leg == "L1",]
+fit <- lm(friction ~ type, data=spider.sub)
+summary(fit)
+
+## Coefficients are just the means of each group
+(coefs <- coef(fit))
+means<-tapply(spider.sub$friction, spider.sub$type, mean)
+means
+
+means[2]-means[1]
+
+##  make the model matrix that is inside the lm
+X <- model.matrix(~ type, data=spider.sub)
+colnames(X)
+
+ggplot(spider.sub, aes(type, friction, fill=type))+geom_boxplot()+theme_bw()+scale_fill_simpsons()
+
+```
+
+Make a plot of a design matrix....
+```{r}
+imagemat(X, main="Model matrix for linear model with one variable")
+```
+
+Linear model with two variables
+```{r}
+X <- model.matrix(~ type + leg, data=spider)
+colnames(X)
+## THIS IS NOT HELPFUL TO ME
+imagemat(X, main="Model matrix for linear model with two factors")
+
+fitTL <- lm(friction ~ type + leg, data=spider)
+summary(fitTL)
+(coefs <- coef(fitTL))
+```
+
+
