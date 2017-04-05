@@ -272,6 +272,26 @@ imagemat(X, main="Model matrix for linear model with two factors")
 fitTL <- lm(friction ~ type + leg, data=spider)
 summary(fitTL)
 (coefs <- coef(fitTL))
+
+## least squares estimate of model
+Y <- spider$friction
+X <- model.matrix(~ type + leg, data=spider)
+beta.hat <- solve(t(X) %*% X) %*% t(X) %*% Y
+t(beta.hat)
+
+## then from lm it is identical
+coefs
+
+## however since the model assumes the effects are additive the L2-3 coefficients are not the same as the difference from the intercept
+# the type coefficient is a weighted average of the group mean differences (weighted by the sample size of each group)
+spider$group<-paste(spider$leg,spider$type, sep="")
+s <- split(spider$friction, spider$group)
+means<- sapply(s, mean)
+ns <-sapply(s, length)[c(1,3,5,7)]
+(w <- ns/sum(ns))#weights
+sum(w * (means[c(2,4,6,8)] - means[c(1,3,5,7)]))
 ```
+
+
 
 
