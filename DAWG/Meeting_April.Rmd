@@ -2,13 +2,16 @@
 title: "Meeting April"
 author: "Redgar"
 date: "April 3, 2017"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
-```{r}
+```{r message=FALSE}
 setwd("~/Documents/Side/DAWG/")
 library(rafalib)
 library(UsingR)
+library(contrast)
 ```
 # Excercise 1
 ```{r}
@@ -76,7 +79,7 @@ y = father.son$sheight
 mean((y - mean(y))*(x-mean(x)))
 ```
 
-# The design matrix
+#### The design matrix
 ```{r}
 group <- factor( c(1,1,2,2) )
 model.matrix(~ group)
@@ -91,7 +94,7 @@ model.matrix(~ diet + sex)
 
 
 
-### High fat vs low fat design matrix
+#### High fat vs low fat design matrix
 ```{r}
 dat <- read.csv("femaleMiceWeights.csv") ##previously downloaded
 stripchart(dat$Bodyweight ~ dat$Diet, vertical=TRUE, method="jitter",main="Bodyweight over Diet")
@@ -123,7 +126,7 @@ summary(fit)$coefficients[2,3]
 ttest$statistic
 ```
 
-## Excercise
+# Excercise
 ```{r}
 # 1
 Nx=5
@@ -137,7 +140,7 @@ X <- cbind(rep(1,Nx + Ny),rep(c(0,1),c(Nx, Ny)))
 ```
 
 
-# Variance-covariance matrix
+####  Variance-covariance matrix
 ```{r}
 x <- father.son$fheight
 y <- father.son$sheight
@@ -219,7 +222,7 @@ summary(fit)
 
 
 
-### Interactions and contrasts spider legs!!! 
+#### Interactions and contrasts spider legs!!! 
 ###### pg 196
 ```{r}
 url <- "https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/spider_wolff_gorb_2013.csv"
@@ -236,7 +239,7 @@ library("ggsci")
 ggplot(spider, aes(type, friction, fill=type))+geom_boxplot()+theme_bw()+facet_wrap(~leg, nrow=1)+scale_fill_simpsons()
 ```
 
-Linear model with one variable
+#### Linear model with one variable
 ```{r}
 spider.sub <- spider[spider$leg == "L1",]
 fit <- lm(friction ~ type, data=spider.sub)
@@ -262,7 +265,7 @@ Make a plot of a design matrix....
 imagemat(X, main="Model matrix for linear model with one variable")
 ```
 
-Linear model with two variables
+#### Linear model with two variables
 ```{r}
 X <- model.matrix(~ type + leg, data=spider)
 colnames(X)
@@ -292,6 +295,125 @@ ns <-sapply(s, length)[c(1,3,5,7)]
 sum(w * (means[c(2,4,6,8)] - means[c(1,3,5,7)]))
 ```
 
+#### Contrasting coefficients (that were not the intecept, L1 here) contrasts!
+```{r}
+# can be done using the contrasts package
+L3vsL2 <- contrast(fitTL,list(leg="L3",type="pull"),list(leg="L2",type="pull"))
+L3vsL2
+# contrast matrix to pull out the L2 L3 comparison 
+L3vsL2$X
+```
 
 
+#### Linear Model with Interactions
+```{r}
+X <- model.matrix(~ type + leg + type:leg, data=spider)
+colnames(X)
+head(X)
+
+## now using lm
+fitX <- lm(friction ~ type + leg + type:leg, data=spider)
+summary(fitX)
+coefs <- coef(fitX)
+
+## contrasts from an interaction model
+L2push.vs.pull <- contrast(fitX,list(leg="L2", type = "push"),list(leg="L2", type = "pull"))
+L2push.vs.pull
+coefs[2] + coefs[6]
+```
+
+#### Analysis of variance (here we are taught it only as an F test)
+```{r}
+## which model is a better fit?
+anova(fitX)
+# The sum of squares  term can be interpreted as the value of each term to reducing the models sum of squares
+# here we manually calculate the term given in the ANOVA
+
+## sum of squares with just the intercept
+mu0 <- mean(spider$friction)
+(initial.ss <- sum((spider$friction - mu0)^2))
+
+## sum of square with teh type of friction term
+s <- split(spider$friction, spider$type)
+after.type.ss <- sum( sapply(s, function(x) {
+  residual <- x - mean(x)
+  sum(residual^2)
+  }) )
+after.type.ss
+
+(type.ss <- initial.ss - after.type.ss)
+
+## as terms are added to the sum of squares calculation sequentially the order of the terms is important
+
+```
+
+
+
+# Exercises pg 124
+Question 1
+```{r}
+species <- factor(c("A","A","B","B"))
+condition <- factor(c("control","treated","control","treated"))
+model.matrix(~ species + condition)
+
+fit <- lm(sample(1:100,4) ~ species + condition)
+contrast(fit,list(species="B", condition = "control"),list(species="A", condition = "treated"))$X
+# D) 0 1 -1
+```
+
+Question 2
+```{r}
+# t-value = t-statistic = estimate_mean/std.error
+fit <- lm(friction ~ type + leg, data=spider)
+summary(fit)$coef[,"t value"]
+
+contrast(fit,list(leg="L4", type = "pull"),list(leg="L2", type = "pull"))
+#2.45 
+```
+
+Question 3
+```{r}
+cT<-contrast(fit,list(leg="L4", type = "pull"),list(leg="L2", type = "pull"))$X
+#We would have obtained the same result for a contrast of L3 and L2 had we picked type="push
+X <- model.matrix(~ type + leg, data=spider)
+Sigma.hat <- sum(fit$residuals^2)/(nrow(X) - ncol(X)) * solve(t(X) %*% X)
+signif(Sigma.hat, 2)
+sqrt(cT %*% Sigma.hat %*% t(cT))
+
+## or
+contrast(fit,list(leg="L4", type = "pull"),list(leg="L2", type = "pull"))$SE
+```
+
+Question 4
+```{r}
+spider$log2friction <- log2(spider$friction)
+ggplot(spider, aes(type, log2friction, fill=type))+geom_boxplot()+theme_bw()+facet_wrap(~leg, nrow=1)+scale_fill_simpsons()
+
+fitX <- lm(log2friction ~ type + leg + type:leg, data=spider)
+summary(fitX)
+coefs <- coef(fitX)
+
+summary(fitX)$coef["typepush:legL4","t value"]
+
+#-3.688549
+```
+
+Question 5
+```{r}
+anova(fitX)
+#10.701 
+
+```
+
+Question 6
+```{r}
+contrast(fitX,list(leg="L1", type = "pull"),list(leg="L2", type = "pull"))
+#-0.3468125
+```
+
+Question 7
+```{r}
+contrast(fitX,list(leg="L1", type = "push"),list(leg="L2", type = "push"))
+#-0.4464843
+```
 
