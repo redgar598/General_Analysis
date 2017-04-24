@@ -382,6 +382,7 @@ sqrt(cT %*% Sigma.hat %*% t(cT))
 
 ## or
 contrast(fit,list(leg="L4", type = "pull"),list(leg="L2", type = "pull"))$SE
+#0.04462392
 ```
 
 Question 4
