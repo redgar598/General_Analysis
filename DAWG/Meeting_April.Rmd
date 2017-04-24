@@ -349,7 +349,7 @@ after.type.ss
 
 
 
-# Exercises pg 124
+# Exercises pg 224
 Question 1
 ```{r}
 species <- factor(c("A","A","B","B"))
@@ -415,5 +415,118 @@ Question 7
 ```{r}
 contrast(fitX,list(leg="L1", type = "push"),list(leg="L2", type = "push"))
 #-0.4464843
+```
+
+
+
+## Colinearity
+Don't do it.
+
+#### Rank
+Rank of a matrix is the number if independent columns in the matrix. It is a test for confounding. If all columns are not independent than rank < ncol. In R qr calculates rank of a design matrix.
+```{r}
+# example where treatment and rank are confounded
+Sex <- c(0,0,0,0,1,1,1,1)
+A <-c(1,1,0,0,0,0,0,0)
+B <-c(0,0,1,1,0,0,0,0)
+C <-c(0,0,0,0,1,1,0,0)
+D <-c(0,0,0,0,0,0,1,1)
+X <- model.matrix(~Sex+A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+```
+
+#### Removing confounding
+Design ya shit better.
+
+
+
+
+# Exercises pg 231
+Question 1
+```{r}
+# I think B but I will test
+A <-c(1,1,1,1)
+B <-c(0,0,1,1)
+C <-c(0,1,0,1)
+D <-c(1,1,0,0)
+X <- model.matrix(~A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+
+# you are an idiot
+
+# maybe D?
+A <-c(0,0,1,1,0,0)
+B <-c(0,0,0,0,1,1)
+C <-c(0,0,1,1,1,1)
+D <-c(0,1,0,1,0,1)
+E <-c(1,1,1,1,1,1)
+
+X <- model.matrix(~E+A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+
+# ya fool
+
+#F?
+A <-c(0,0,0,1,1,1)
+B <-c(0,0,1,0,0,1)
+C <-c(1,1,1,0,0,0)
+D <-c(1,1,1,1,1,1)
+X <- model.matrix(~D+A+B+C-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+
+#A
+A <-c(0,0,0)
+B <-c(0,0,0)
+C <-c(1,1,0)
+D <-c(1,0,1)
+X <- model.matrix(~A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+
+#E!?!?!
+A <-c(1,1,1,1)
+B <-c(0,0,1,1)
+C <-c(0,1,0,1)
+D <-c(0,0,0,1)
+X <- model.matrix(~A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+
+# it was E....
+
+```
+
+Question 2
+```{r}
+#set up confounded example
+sex <- factor(rep(c("female","male"),each=4))
+trt <- factor(c("A","A","B","B","C","C","D","D"))
+
+X <- model.matrix( ~ sex + trt)
+qr(X)$rank
+ncol(X)
+
+# outcome
+Y <- 1:8
+
+makeYstar <- function(a,b) Y - X[,2] * a - X[,5] * b
+fitTheRest <- function(a,b) {
+Ystar <- makeYstar(a,b)
+Xrest <- X[,-c(2,5)]
+betarest <- solve(t(Xrest) %*% Xrest) %*% t(Xrest) %*% Ystar
+residuals <- Ystar - Xrest %*% betarest
+sum(residuals^2)
+}
+
+# fit an exmaple for fixed coefficients
+#a=coef male
+#b=coef of D treatment
+
+makeYstar(1,2)
+fitTheRest(1,2)
+```
+
+Question 3
+```{r}
+outer(-2:8,-2:8,Vectorize(fitTheRest))
+min(outer(-2:8,-2:8,Vectorize(fitTheRest)))
 ```
 

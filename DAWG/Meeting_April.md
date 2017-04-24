@@ -27,7 +27,7 @@ A = solve(crossprod(X))%*%t(X)
 ```
 
 ```
-## [1] 8.878404
+## [1] 9.911654
 ```
 
 ```r
@@ -46,7 +46,7 @@ se(g_estimates)
 ```
 
 ```
-## [1] 0.001363764
+## [1] 0.001353912
 ```
 
 ```r
@@ -68,7 +68,7 @@ slope
 
 ```
 ##         x 
-## 0.8470997
+## 0.3254244
 ```
 
 ```r
@@ -89,7 +89,7 @@ se(slope_estimates)
 ```
 
 ```
-## [1] 0.001225954
+## [1] 0.001228056
 ```
 
 ```r
@@ -339,7 +339,7 @@ summary(lm(y~x))$coef[,2]
 
 ```
 ## (Intercept)           x 
-##    9.668650    0.142659
+##   8.5019599   0.1248237
 ```
 
 # Excercises
@@ -874,7 +874,7 @@ after.type.ss
 
 
 
-# Exercises pg 124
+# Exercises pg 224
 Question 1
 
 ```r
@@ -1096,5 +1096,202 @@ contrast(fitX,list(leg="L1", type = "push"),list(leg="L2", type = "push"))
 
 ```r
 #-0.4464843
+```
+
+
+
+## Colinearity
+Don't do it.
+
+#### Rank
+Rank of a matrix is the number if independent columns in the matrix. It is a test for confounding. If all columns are not independent than rank < ncol. In R qr calculates rank of a design matrix.
+
+```r
+# example where treatment and rank are confounded
+Sex <- c(0,0,0,0,1,1,1,1)
+A <-c(1,1,0,0,0,0,0,0)
+B <-c(0,0,1,1,0,0,0,0)
+C <-c(0,0,0,0,1,1,0,0)
+D <-c(0,0,0,0,0,0,1,1)
+X <- model.matrix(~Sex+A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+```
+
+```
+## ncol= 5 rank= 4
+```
+
+#### Removing confounding
+Design ya shit better.
+
+
+
+
+# Exercises pg 231
+Question 1
+
+```r
+# I think B but I will test
+A <-c(1,1,1,1)
+B <-c(0,0,1,1)
+C <-c(0,1,0,1)
+D <-c(1,1,0,0)
+X <- model.matrix(~A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+```
+
+```
+## ncol= 4 rank= 3
+```
+
+```r
+# you are an idiot
+
+# maybe D?
+A <-c(0,0,1,1,0,0)
+B <-c(0,0,0,0,1,1)
+C <-c(0,0,1,1,1,1)
+D <-c(0,1,0,1,0,1)
+E <-c(1,1,1,1,1,1)
+
+X <- model.matrix(~E+A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+```
+
+```
+## ncol= 5 rank= 4
+```
+
+```r
+# ya fool
+
+#F?
+A <-c(0,0,0,1,1,1)
+B <-c(0,0,1,0,0,1)
+C <-c(1,1,1,0,0,0)
+D <-c(1,1,1,1,1,1)
+X <- model.matrix(~D+A+B+C-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+```
+
+```
+## ncol= 4 rank= 3
+```
+
+```r
+#A
+A <-c(0,0,0)
+B <-c(0,0,0)
+C <-c(1,1,0)
+D <-c(1,0,1)
+X <- model.matrix(~A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+```
+
+```
+## ncol= 4 rank= 2
+```
+
+```r
+#E!?!?!
+A <-c(1,1,1,1)
+B <-c(0,0,1,1)
+C <-c(0,1,0,1)
+D <-c(0,0,0,1)
+X <- model.matrix(~A+B+C+D-1)
+cat("ncol=",ncol(X),"rank=", qr(X)$rank,"\n")
+```
+
+```
+## ncol= 4 rank= 4
+```
+
+```r
+# it was E....
+```
+
+Question 2
+
+```r
+#set up confounded example
+sex <- factor(rep(c("female","male"),each=4))
+trt <- factor(c("A","A","B","B","C","C","D","D"))
+
+X <- model.matrix( ~ sex + trt)
+qr(X)$rank
+```
+
+```
+## [1] 4
+```
+
+```r
+ncol(X)
+```
+
+```
+## [1] 5
+```
+
+```r
+# outcome
+Y <- 1:8
+
+makeYstar <- function(a,b) Y - X[,2] * a - X[,5] * b
+fitTheRest <- function(a,b) {
+Ystar <- makeYstar(a,b)
+Xrest <- X[,-c(2,5)]
+betarest <- solve(t(Xrest) %*% Xrest) %*% t(Xrest) %*% Ystar
+residuals <- Ystar - Xrest %*% betarest
+sum(residuals^2)
+}
+
+# fit an exmaple for fixed coefficients
+#a=coef male
+#b=coef of D treatment
+
+makeYstar(1,2)
+```
+
+```
+## 1 2 3 4 5 6 7 8 
+## 1 2 3 4 4 5 4 5
+```
+
+```r
+fitTheRest(1,2)
+```
+
+```
+## [1] 11
+```
+
+Question 3
+
+```r
+outer(-2:8,-2:8,Vectorize(fitTheRest))
+```
+
+```
+##       [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11]
+##  [1,]  102   83   66   51   38   27   18   11    6     3     2
+##  [2,]   83   66   51   38   27   18   11    6    3     2     3
+##  [3,]   66   51   38   27   18   11    6    3    2     3     6
+##  [4,]   51   38   27   18   11    6    3    2    3     6    11
+##  [5,]   38   27   18   11    6    3    2    3    6    11    18
+##  [6,]   27   18   11    6    3    2    3    6   11    18    27
+##  [7,]   18   11    6    3    2    3    6   11   18    27    38
+##  [8,]   11    6    3    2    3    6   11   18   27    38    51
+##  [9,]    6    3    2    3    6   11   18   27   38    51    66
+## [10,]    3    2    3    6   11   18   27   38   51    66    83
+## [11,]    2    3    6   11   18   27   38   51   66    83   102
+```
+
+```r
+min(outer(-2:8,-2:8,Vectorize(fitTheRest)))
+```
+
+```
+## [1] 2
 ```
 
