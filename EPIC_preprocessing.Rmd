@@ -10,6 +10,7 @@ library(methylumi)
 library(wateRmelon)
 library(RPMM)
 library("ggsci")
+library(RColorBrewer)
 
 
 setwd("~/Side/5hmC_Turecki/")
@@ -24,12 +25,12 @@ qcFile <-  ("/home/redgar/Side/5hmC_Turecki/5hmC pilot with Turecki samples/geno
 #Producing the lumi objects
 hmc<- lumiMethyR(allFile)
 hmc.2 <- methylumiR(allFile, qcfile = qcFile)
-save(hmc,hmc.2, file="hmc_methlylumi.RData")
+#save(hmc,hmc.2, file="hmc_methlylumi.RData")
 ```
 
 
-```{r, echo=F}
-load("hmc_methlylumi.RData")
+```{r, echo=T}
+load("~/Side/5hmC_Turecki/hmc_methlylumi.RData")
 ```
 
 
@@ -37,7 +38,7 @@ load("hmc_methlylumi.RData")
 ```{r}
 meta_hmc<-read.table("/home/redgar/Side/5hmC_Turecki/5hmC pilot with Turecki samples/genomestudio files/5hmC pilot-samplefile.txt", sep="\t", header=T)
 meta_hmc$Subject<-c("64","104","104","173","169","173","64","169")
-meta_hmc
+meta_hmc$DNAm_type<-c("5mc","5mc","5mc+5hmc","5mc","5mc","5mc+5hmc","5mc+5hmc","5mc+5hmc")
 
 identical(sampleNames(hmc.2), as.character(meta_hmc$Sample_ID))
 ```
@@ -63,9 +64,9 @@ Beta_sample_melted<- melt(Beta_sample)
 Beta_Plot<-Beta_sample_melted[which(!(is.na(Beta_sample_melted$value))),]
 
 #add meta
-Beta_Plot<-merge(Beta_Plot,meta_hmc, by.x="X2", by.y="Sample_ID")
+Beta_Plot<-merge(Beta_Plot,meta_hmc, by.x="Var2", by.y="Sample_ID")
 
-ggplot(Beta_Plot, aes(value, group=X2, color=DNAm_type))+
+ggplot(Beta_Plot, aes(value, group=Var2, color=DNAm_type))+
   geom_density(size=1)+theme_bw()+scale_color_manual(values=c("red","grey"))
 
 ```
@@ -129,7 +130,7 @@ https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-1066-1
 They include this annotated list in their supplement.
 
 ```{r}
-cross_reactive<-read.csv("Pidsley_cross_reactive.csv", stringsAsFactors = F)
+cross_reactive<-read.csv("~/Side/5hmC_Turecki/Pidsley_cross_reactive.csv", stringsAsFactors = F)
 hmc.2_filtered<-hmc.2_filtered[which(!(featureNames(hmc.2_filtered)%in%cross_reactive$X)),]
 dim(hmc.2_filtered) # probes = 822682, n = 8, 43177 filtered
 ```
@@ -137,9 +138,9 @@ dim(hmc.2_filtered) # probes = 822682, n = 8, 43177 filtered
 For polymorphic probes I will The Pidsley annotation aswell for "Probes overlapping genetic variants at targeted CpG sites." and "Probes overlapping genetic variants at single base extension sites for Infinium Type I probes" but NOT "Probes with genetic variants overlapping the body of the probe: 48 base pairs for Infinium Type I probes and 49 base pairs for Infinium Type II probes."
 
 ```{r}
-polymorphic<-read.csv("Pidsley_Polymorphic_CpGs.csv",stringsAsFactors = F)
+polymorphic<-read.csv("~/Side/5hmC_Turecki/Pidsley_Polymorphic_CpGs.csv",stringsAsFactors = F)
 length(unique(polymorphic$PROBE))
-baseext<-read.csv("Pidsley_single_base_extension.csv",stringsAsFactors = F)
+baseext<-read.csv("~/Side/5hmC_Turecki/Pidsley_single_base_extension.csv",stringsAsFactors = F)
 length(unique(baseext$PROBE))
 
 hmc.2_filtered<-hmc.2_filtered[which(!(featureNames(hmc.2_filtered)%in%c(polymorphic$PROBE, baseext$PROBE))),]
@@ -180,7 +181,7 @@ dim(hmc.pf) #  770,004      8
 # the adjusted filter changes the CpG number filtered as well becuase the 3 baddies change the pvalue counts for probes.
 
 hmc.2_filtered<-hmc.pf
-save(hmc.2_filtered, file = "hmC_fully_filtered.RData")
+#save(hmc.2_filtered, file = "hmC_fully_filtered.RData")
 ```
 
 We have removed another 41,059 probes. This leaves us with 770,004 probes for our analysis.  Including 16,106 X chr and 363 Y chr CpGs.
@@ -213,28 +214,6 @@ ggplot(df)+
   scale_x_discrete(position = "top") 
 ```
 
-
-# Normalization (BMIQ)
-```{r}
-# BMIQ
-hmc_bmiq<-bmiq(hmc.2_filtered) 
-
-## beta distributions
-meta_hmc<-meta_hmc[match(sampleNames(hmc_bmiq), meta_hmc$Sample_ID),]
-
-hmc_bmiqBetas<-betas(hmc_bmiq)
-Beta_sample<-hmc_bmiqBetas[sample(1:nrow(hmc_bmiqBetas), 100000),]
-Beta_sample_melted<- melt(Beta_sample)
-Beta_Plot<-Beta_sample_melted[which(!(is.na(Beta_sample_melted$value))),]
-Beta_Plot<-merge(Beta_Plot,meta_hmc, by.x="X2", by.y="Sample_ID")
-
-ggplot(Beta_Plot, aes(value, group=X2, color=DNAm_type))+
-  geom_density(size=1)+theme_bw()+scale_color_manual(values=c("red","grey"))
-
-
-dim(hmc_bmiqBetas) # 770004      8 
-save(hmc_bmiqBetas, file = "hmc_prbFilter_bmiq_norm.RData")
-```
 
 
 
