@@ -1,0 +1,657 @@
+---
+title: "Kollman_Vaccination"
+author: "Rachel Edgar"
+date: "08/05/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+setwd("~/Side/Kollman_Vaccination")
+
+library(methylumi)
+library(wateRmelon)
+library(RPMM)
+library("ggsci")
+library(reshape)
+library(ggplot2)
+library(RColorBrewer)
+library(lme4)
+library(gridExtra)
+
+```
+
+
+## Load the data from Genome Studio and make methylumi objects
+
+```{r,eval=F, echo=T}
+allFile <- ("/home/redgar/Side/Kollman_Vaccination/Kollman_Pilot-alldata.txt") 
+qcFile <- ("/home/redgar/Side/Kollman_Vaccination/Kollman_Pilot-qcfile.txt") 
+
+#vaccination<- lumiMethyR(allFile)
+vaccination.2 <- methylumiR(allFile, qcfile = qcFile)
+save(vaccination.2, file="Kollman_Vaccination.RData")
+```
+
+
+```{r, echo=F}
+load("Kollman_Vaccination.RData")
+dim(vaccination.2)#865918       31 
+```
+
+## Meta data
+```{r}
+meta_shipping<-read.csv("/home/redgar/Side/Kollman_Vaccination/Shipping_info_WB_epigenetics_Kobor_lab.csv")
+meta_sampleinfo<-read.table("/home/redgar/Side/Kollman_Vaccination/Kollman_Pilot-samplefile.txt", sep="\t", header=T, stringsAsFactors = F)
+meta_sampleinfo$Sample_ID[24]<-"GR02_Visit6"
+
+meta_shipping<-meta_shipping[-31,]
+meta_shipping$Sample_ID<-gsub(" ","",meta_shipping$VisitNum)
+meta_shipping$Sample_ID<-paste(meta_shipping$SUBJECT_ID, "_",meta_shipping$Sample_ID, sep="")
+
+meta_vaccination<-merge(meta_shipping, meta_sampleinfo, by="Sample_ID")
+meta_vaccination$Sample_ID<-meta_vaccination$Sample_Label
+
+meta_vaccination<-meta_vaccination[ , -which(names(meta_vaccination) %in% c("Sample_Label","Sample_Group","ShippedTo","ShippedFrom",
+                                                                        "ShippedDate","Container","NumberShipped","SampleYN",
+                                                                        "Cells.per.vial","SampleYN","test","DeviationYN","Deviation","Pool_ID"))]
+meta_vaccination<-meta_vaccination[match(sampleNames(vaccination.2), meta_vaccination$Sample_ID),]
+
+dim(meta_vaccination)
+identical(sampleNames(vaccination.2), as.character(meta_vaccination$Sample_ID))
+
+save(meta_vaccination, file="meta_vaccination.RData")
+```
+
+#### Pvalues of samples on each array
+```{r}
+avgPval <- colMeans(pvals(vaccination.2))
+
+#p-values for detection for the samples
+meta_vaccination$Det_pval<-avgPval
+
+ggplot(meta_vaccination)+geom_boxplot(aes(as.factor(Sentrix_ID), Det_pval, fill=as.factor(Sentrix_ID)), outlier.size=NA)+
+  geom_point(aes(as.factor(Sentrix_ID), Det_pval, group=Sample_ID, fill=as.factor(Sentrix_ID)), shape=21, color="black",
+             position = position_jitter(w = 0.25))+theme_bw()
+```
+
+
+#### Beta distribution
+```{r}
+vaccinationBetas<-betas(vaccination.2)
+
+## Beta distribtuions 
+Beta_melted<- melt(vaccinationBetas)
+#remove NAs before plotting (otherwise get many non-inifnite warnings)
+Beta_Plot<-Beta_melted[which(!(is.na(Beta_melted$value))),]
+
+#add meta
+Beta_Plot<-merge(Beta_Plot,meta_vaccination, by.x="X2", by.y="Sample_ID")
+
+ggplot(Beta_Plot, aes(value, group=X2, color=SID))+
+  geom_density()+theme_bw()+scale_color_locuszoom()+xlab("DNAm Beta Value")
+
+```
+
+
+#### Confirm ID with SNPs and cluster by DNAm type?
+```{r}
+# Clustering By Any Meta Data variable
+# remove rows with NAs
+vaccinationBetasbeta_cluster<-vaccinationBetas[complete.cases(vaccinationBetas),]
+
+# plot clustering with color function
+plotHclustColors <- function(matrix,leafcolor) {
+  colnames(matrix) <- leafcolor
+  d <- dist(t(matrix))
+  hc <- hclust(d, method = "complete") #single, complete, average, ward
+  color<-rep(brewer.pal(12,"Paired"),ceiling(length(unique(leafcolor))/12))
+  labelColors <- color[sample(1:length(color),length(unique(leafcolor)))]
+  colLab <- function(n) {
+    if (is.leaf(n)) {
+      a <- attributes(n)
+      labCol <- labelColors[which(unique(leafcolor) == a$label)]
+      attr(n, "nodePar") <- c(a$nodePar, lab.col=labCol)
+    }
+    n
+  }
+  clusDendro <- dendrapply(as.dendrogram(hc), colLab)
+  plot(clusDendro)
+}
+
+
+# Plot
+plotHclustColors(vaccinationBetasbeta_cluster, meta_vaccination$SID) 
+
+
+#Genotyping Probes (show that samples from the same individual cluster by SNPs)
+CpGs<- rownames(vaccinationBetas)
+SNP_Probes<-CpGs[grep("rs", CpGs)]# 59 SNP probes on EPIC
+SNPs<-vaccinationBetas[CpGs%in%SNP_Probes,]
+# Remove NAs (if any)
+SNPs<-SNPs[complete.cases(SNPs),]# 58 cause one was all NA
+
+plotHclustColors(SNPs, meta_vaccination$SID)#all samples pair with their other time point
+```
+
+
+# Probe Filtering
+##### Removal of SNP Probes
+We remove the SNP probes as they are used as an internal control to ensure your samples are what you think they are and are not used for any methylation analysis.
+
+```{r, echo=FALSE}
+vaccination.2_filtered <- vaccination.2[substring(featureNames(vaccination.2),1,2) != "rs", ]
+dim(vaccination.2_filtered) # probes = 865859, n = 31
+```
+
+
+##### Cross-hybridizing probes and polymorphic probes. Don't have an a Magda Price annotation for EPIC. So gonna go find that shit. 
+https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-1066-1
+"43,254 cross-reactive probes with ≥ 47 bp homology with an off-target site, of which 15,782 (36.5 %) are new to the EPIC platform"
+
+They include this annotated list in their supplement.
+
+```{r}
+cross_reactive<-read.csv("~/Side/5hmC_Turecki/Pidsley_cross_reactive.csv", stringsAsFactors = F)
+vaccination.2_filtered<-vaccination.2_filtered[which(!(featureNames(vaccination.2_filtered)%in%cross_reactive$X)),]
+dim(vaccination.2_filtered) # probes = 822682, n = 31, 43177 filtered
+```
+
+For polymorphic probes I will The Pidsley annotation aswell for "Probes overlapping genetic variants at targeted CpG sites." and "Probes overlapping genetic variants at single base extension sites for Infinium Type I probes" but NOT "Probes with genetic variants overlapping the body of the probe: 48 base pairs for Infinium Type I probes and 49 base pairs for Infinium Type II probes."
+
+```{r}
+polymorphic<-read.csv("~/Side/5hmC_Turecki/Pidsley_Polymorphic_CpGs.csv",stringsAsFactors = F)
+length(unique(polymorphic$PROBE))
+baseext<-read.csv("~/Side/5hmC_Turecki/Pidsley_single_base_extension.csv",stringsAsFactors = F)
+length(unique(baseext$PROBE))
+
+vaccination.2_filtered<-vaccination.2_filtered[which(!(featureNames(vaccination.2_filtered)%in%c(polymorphic$PROBE, baseext$PROBE))),]
+dim(vaccination.2_filtered) # probes = 811063, n = 31, 11619 filtered
+```
+
+##### Sex Chromosomes need to add
+```{r}
+vaccination.2_filtered <- vaccination.2_filtered[!featureData(vaccination.2_filtered)$CHR%in%c("X", "Y"), ]
+dim(vaccination.2_filtered) # probes = 792939, n = 31, 18124 filtered
+```
+
+
+We have removed 72,979 probes. This leaves us with 792,939 probes for our analysis. 
+
+
+
+# Watermelon Filter and Normalization
+# BMIQ (probe type normalization)
+    #Checks
+      #iDMR, X, Snps
+      #Replicates correlation
+      
+```{r,eval=F, echo=T}
+# waterMelon Bad probe filtration
+vaccination.pf<-pfilter(vaccination.2_filtered)
+
+    # 0 samples having 1 % of sites with a detection p-value greater than 0.05 were removed 
+    # Samples removed:  
+    # 1067 sites were removed as beadcount <3 in 5 % of samples 
+    # 669 sites having 1 % of samples with a detection p-value greater than 0.05 were removed 
+dim(vaccination.pf) #  791,273       31 
+
+vaccination.2_filtered<-vaccination.pf
+save(vaccination.2_filtered, file = "vaccination_fully_filtered.RData")
+```
+
+We have removed another 1,666 probes. This leaves us with 791,273 probes for our analysis. 
+
+#### Probe attrition plot
+```{r}
+df<-data.frame(sample_num_remaining=c(865918,865859,822682,811063,792939,791872,791273), filter=c("EPIC Probe Number","Removal of SNP Probes","Removal of Pidsley Cross Reactive Probes","Removal of Pidsley Polymorphic Probes","Removal of X and Y chromosome probes", "Removal of Probes with Beadcount <3\nin 5 % of Samples", "Removal of Probes with 1 % of samples\nwith a detection p-value greater than 0.05"))
+df$sample_num_lost<-c(0,sapply(2:nrow(df), function(x) df$sample_num_remaining[x-1]-df$sample_num_remaining[x]))
+
+df$filter<-factor(df$filter, rev(df$filter))
+          
+library(scales)
+ggplot(df)+
+  geom_bar(aes(filter,-sample_num_remaining), stat="identity", fill="grey70", color="black")+
+  geom_bar(aes(filter,sample_num_lost), stat="identity",fill="darkred", color="black")+
+  geom_text(aes(x=filter, y=-min(sample_num_remaining)/2,  label=comma(sample_num_remaining)))+
+  geom_text(aes(x=filter, y=max(sample_num_lost)/1.5,  label=comma(sample_num_lost)))+
+  geom_hline(yintercept=0)+
+  coord_flip()+theme_bw()+ylab("")+xlab("")+
+  theme(axis.line = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = "grey20", size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) +
+  scale_x_discrete(position = "top") 
+```
+
+
+
+# Normalization 
+```{r}
+# dasen
+vaccination_dasen<-dasen(vaccination.2_filtered) 
+
+## Beta distribtuions plot
+Beta_melted<- melt(betas(vaccination_dasen))
+Beta_Plot<-Beta_melted[which(!(is.na(Beta_melted$value))),]
+Beta_Plot<-merge(Beta_Plot,meta_vaccination, by.x="X2", by.y="Sample_ID")
+
+ggplot(Beta_Plot, aes(value, group=X2, color=SID))+
+  geom_density()+theme_bw()+scale_color_locuszoom()+xlab("DNAm Beta Value")
+
+
+dim(vaccination_dasen) # 791273      31 
+vaccinationBetas<-betas(vaccination_dasen)
+vaccinationBetas<-as.data.frame(vaccinationBetas)
+save(vaccinationBetas, file = "vaccination_prbFilter_dasen_norm.RData")
+
+```
+
+
+
+
+## Blood composition correction
+Don't load packages for this section, somthing is overwriting libraries for ECC
+```{r}
+library("FlowSorted.Blood.450k")
+source("~/ECC5.R")
+
+load("vaccination_prbFilter_dasen_norm.RData")
+
+predictions<- ECC5(vaccinationBetas)
+counts<- as.data.frame(predictions$counts)
+
+save(counts, file="Vaccinations_cell_compositions.RData")
+
+
+# Impute NAs
+imputeMedianv3<-function(x) apply(x, 1, function(x){x[is.na(x)]<-median(x, na.rm=T); x}) #impute with row mean
+vaccination_betas_imputed<-t(imputeMedianv3(vaccinationBetas))
+
+# deconvolute
+avebeta.lm<-apply(vaccination_betas_imputed, 1, function(x){
+  counts[colnames(vaccination_betas_imputed),]->blood
+  lm(x~CD8T+CD4T+NK+Bcell+Mono,data=blood)
+})
+residuals<-t(sapply(avebeta.lm, function(x)residuals(summary(x))))
+colnames(residuals)<-colnames(vaccination_betas_imputed)
+adj.residuals<-residuals+matrix(apply(vaccination_betas_imputed, 1, mean), nrow=nrow(residuals), ncol=ncol(residuals))
+
+
+save(adj.residuals, file="Vaccinations_adjusted_betas.RData")
+
+
+# do composition again (so can see the normalization effect after adjustment)
+load("Vaccinations_adjusted_betas.RData")
+predictions<- ECC5(as.data.frame(adj.residuals))
+counts_adjusted<- as.data.frame(predictions$counts)
+save(counts_adjusted, file="Vaccinations_cell_compositions_adjusted.RData")
+
+
+#Blood plot
+load("Vaccinations_cell_compositions.RData")
+load("Vaccinations_cell_compositions_adjusted.RData")
+
+counts$Sample_ID<-rownames(counts)
+cellprop_melt<-melt(counts, id="Sample_ID")
+cellprop_melt$Data<-"Original Predicated Proportions"
+counts_adjusted$Sample_ID<-rownames(counts_adjusted)
+cellprop_melt_adjusted<-melt(counts_adjusted, id="Sample_ID")
+cellprop_melt_adjusted$Data<-"Proportions After Deconvolution"
+cellprop_melt_blood<-rbind(cellprop_melt, cellprop_melt_adjusted)
+cellprop_melt_blood$Data <- factor(cellprop_melt_blood$Data,c("Original Predicated Proportions", "Proportions After Deconvolution"))
+
+ggplot(cellprop_melt_blood, aes(variable, value, fill=as.factor(variable)))+
+  geom_point(shape=21, color="black", position = position_jitter(w = 0.2))+theme_bw()+xlab("Blood Cell Type")+ylab("Cell Type Proportion")+
+  facet_grid(~Data, scales="free_x")+scale_fill_manual(values=c("#fed976", "#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#bd0026"),guide=FALSE)
+```
+
+## blood compostion association with variables
+```{r}
+levels(meta_vaccination$VisitNum)
+meta_vaccination$visitnumeric<-meta_vaccination$VisitNum
+levels(meta_vaccination$visitnumeric)
+levels(meta_vaccination$visitnumeric)<-c("","3","4","5","6","7")
+meta_vaccination$visitnumeric<-as.numeric(as.character(meta_vaccination$visitnumeric))
+
+meta_vaccination<-meta_vaccination[match(rownames(counts), meta_vaccination$Sample_ID),]
+
+library(lme4)
+cell_comp_pvalues<-sapply(1:6, function(x){
+  modl<-lmer(counts[,x] ~ meta_vaccination$visitnumeric + (1|meta_vaccination$SID))
+  mods<-lmer(counts[,x] ~  (1|meta_vaccination$SID))
+  Likelihood_Ratio_Test<-anova(modl, mods)
+  Likelihood_Ratio_Test[["Pr(>Chisq)"]][2]
+})
+
+p.adjust(cell_comp_pvalues, method = "bonferroni", n = length(cell_comp_pvalues))
+
+counts$Sample_ID<-rownames(counts)
+counts_plot<-melt(counts)
+plt<-merge(counts_plot, meta_vaccination, by="Sample_ID")
+ggplot(plt, aes(visitnumeric, value, group=SID, color=SID))+geom_line()+geom_point()+theme_bw()+facet_wrap(~variable)+scale_color_locuszoom()+xlab("Visit")+ylab("Cell Proportion in Whole Blood Sample")
+
+```
+
+
+
+## Heat scree plot
+```{r}
+source("Heat_scree_plot.R")
+
+load("meta_vaccination.RData")
+load("Vaccinations_adjusted_betas.RData")
+
+vaccionationBetas<-as.data.frame(adj.residuals)
+
+# PCA
+PCA_full<-prcomp(na.omit(vaccionationBetas))
+Loadings<-as.data.frame(unclass(PCA_full$rotation))
+vars <- PCA_full$sdev^2
+Importance<-vars/sum(vars)
+
+
+
+#Restructure meta
+meta_vaccination$Sentrix_ID<-as.factor(meta_vaccination$Sentrix_ID)
+
+meta_vaccination$visitnumeric<-meta_vaccination$VisitNum
+levels(meta_vaccination$visitnumeric)<-c("","3","4","5","6","7")
+meta_vaccination$visitnumeric<-as.numeric(as.character(meta_vaccination$visitnumeric))
+
+
+meta_categorical <- meta_vaccination[, c("SID","Sex","VisitNum","CollectionDate","Sentrix_ID")]  # input column numbers in meta that contain categorical variables
+meta_continuous <- meta_vaccination[, c("Age.yrs.","visitnumeric")]  # input column numbers in meta that contain continuous variables
+colnames(meta_categorical) <- c("Subject ID","Sex","Visit Number","Collection Date","Sentrix_ID")
+colnames(meta_continuous) <- c("Age","Visit Numeric")
+
+ord<-1:length(c(colnames(meta_categorical),colnames(meta_continuous)))
+
+# how far do you want the plot to go?
+PCs_to_view<-10
+
+
+heat_scree_plot(Loadings, Importance)
+```
+
+## ComBat
+```{r}
+library(sva)
+library(pamr)
+library(limma)
+Mval<-function(beta) log2(beta/(1-beta))
+
+pheno = meta_vaccination
+edata = apply(vaccionationBetas, 1, Mval) # need mvalues for combat
+edata = as.data.frame(edata)
+edata = t(edata)
+
+
+pheno$Sentrix_ID<-as.factor(pheno$Sentrix_ID)
+
+#Combat
+
+#Sentrix_ID
+batch = pheno$Sentrix_ID
+combat_vaccionationBetas = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE)
+
+#another heat scree
+# PCA
+PCA_full<-prcomp(na.omit(combat_vaccionationBetas))
+Loadings<-as.data.frame(unclass(PCA_full$rotation))
+vars <- PCA_full$sdev^2
+Importance<-vars/sum(vars)
+heat_scree_plot(Loadings, Importance)
+
+
+#Back to betas
+betas<-function(M) 2^M/((2^M)+1)
+combat_vaccionationBetas2 = apply(combat_vaccionationBetas, 1, betas) # need mvalues for combat
+combat_vaccionationBetas2 = as.data.frame(combat_vaccionationBetas2)
+combat_vaccionationBetas2 = t(combat_vaccionationBetas2)
+combat_vaccionationBetas<-combat_vaccionationBetas2
+
+save(combat_vaccionationBetas, file="Vaccination_betas_dasen_cellcomp_combat.RData")
+```
+
+
+
+## Replicates
+One replicate so confirm it has a lower RMSE with processing
+```{r}
+load("Kollman_Vaccination.RData")
+raw_betas<-betas(vaccination.2)
+raw_betas_GR02_Visit6<-raw_betas[,grep("GR02_Visit6",colnames(raw_betas))]
+
+load("vaccination_prbFilter_dasen_norm.RData")
+dasen_betas_GR02_Visit6<-vaccinationBetas[,grep("GR02_Visit6",colnames(vaccinationBetas))]
+
+load("Vaccinations_adjusted_betas.RData")
+cellcomp_betas_GR02_Visit6<-as.data.frame(adj.residuals[,grep("GR02_Visit6",colnames(adj.residuals))])
+
+load("Vaccination_betas_dasen_cellcomp_combat.RData")
+combatted_betas_GR02_Visit6<-combat_vaccionationBetas[,grep("GR02_Visit6",colnames(combat_vaccionationBetas))]
+
+
+
+## RMSE
+library(hydroGOF)
+rep_cor<-data.frame(Comparison=c("Original", "dasen Normalized",  
+                                 "dasen Normalized \nCell Composition Adjusted", 
+                                 "dasen Normalized \nCell Composition Adjusted\n ComBatted"),
+                    Correlation=c(rmse(raw_betas_GR02_Visit6[,1],raw_betas_GR02_Visit6[,2], use="complete.obs"),
+                                  rmse(dasen_betas_GR02_Visit6[,1],dasen_betas_GR02_Visit6[,2], use="complete.obs"),
+                                  rmse(cellcomp_betas_GR02_Visit6[,1],cellcomp_betas_GR02_Visit6[,2], use="complete.obs"),
+                                  rmse(combatted_betas_GR02_Visit6[,1],combatted_betas_GR02_Visit6[,2], use="complete.obs")))
+
+
+rep_cor$Comparison<-factor(rep_cor$Comparison, levels =c("Original", "dasen Normalized", 
+                                                         "dasen Normalized \nCell Composition Adjusted", 
+                                                         "dasen Normalized \nCell Composition Adjusted\n ComBatted"))
+ggplot(rep_cor, aes(Comparison, Correlation))+geom_point(size=2)+theme_bw()+ylab("Root Mean Square Error")+xlab("")
+
+# remove replicate
+
+vaccionationBetas<-combat_vaccionationBetas[,-grep("GR02_Visit6_rep",colnames(combat_vaccionationBetas))]
+meta_vaccination<-meta_vaccination[which(meta_vaccination$Sample_ID%in%colnames(vaccionationBetas)),]
+meta_vaccination<-meta_vaccination[match(colnames(vaccionationBetas),meta_vaccination$Sample_ID),]
+
+save(meta_vaccination, vaccionationBetas, file="vaccination_cleaned_data.RData")
+```
+
+
+# Remove Blood invariable CpGs
+```{r}
+library(RCurl)
+x <- getURL("https://raw.githubusercontent.com/redgar598/Tissue_Invariable_450K_CpGs/master/Invariant_Blood_CpGs.csv")
+y <- read.csv(text = x)
+
+vacc_independent_blood_invariable<-vaccionationBetas[which(rownames(vaccionationBetas)%in%y$CpG),]#102173/120009 of the independnt invariable sites are in PAWS
+
+# Call varibility in PAWS
+Variation<-function(x) {quantile(x, c(0.9), na.rm=T)[[1]]-quantile(x, c(0.1), na.rm=T)[[1]]}
+vacc_ref_range<-sapply(1:nrow(vacc_independent_blood_invariable), function(x) Variation(vacc_independent_blood_invariable[x,]))
+Invariable_in_vacc<-vacc_independent_blood_invariable[which(vacc_ref_range<0.05),]
+
+# Which CpGs are invariable in PAWS and the independent data
+invar_in_vacc_and_independent<-intersect(y$CpG, rownames(Invariable_in_vacc)) #101869/102173 (99.7%)
+vaccionationBetas_variable<-vaccionationBetas[which(!(rownames(vaccionationBetas)%in%invar_in_vacc_and_independent)),]#689404 
+vaccionationBetas<-vaccionationBetas_variable #689404 vs 791273 sites
+
+save(vaccionationBetas, meta_vaccination, file="vaccination_cleaned_data_variable.RData")
+```
+
+
+## Linear Mixed effects One way-ANOVA
+```{r}
+load("vaccination_cleaned_data_variable.RData")
+Mval<-function(beta) log2(beta/(1-beta))
+vaccionationMval = apply(vaccionationBetas, 1, Mval) # need mvalues for combat
+vaccionationMval = as.data.frame(vaccionationMval)
+vaccionationMval = t(vaccionationMval)
+
+
+### Linear Mixed effects model
+visit_pvalues<-sapply(1:nrow(vaccionationMval), function(x){
+  print(x)
+  meta_ex<-meta_vaccination
+  meta_ex$Mval<-unlist(vaccionationMval[x,])
+  modl<-lmer(Mval ~ as.factor(VisitNum) + (1|SID), data=meta_ex)
+  mods<-lmer(Mval ~  (1|SID), data=meta_ex)
+  Likelihood_Ratio_Test<-anova(modl, mods)
+  Likelihood_Ratio_Test[["Pr(>Chisq)"]][2]
+})
+
+save(visit_pvalues, file="vaccination_visit_pvalues.RData")
+
+
+## pvalue distribution
+load("vaccination_visit_pvalues.RData")
+pvalue_dist<-data.frame(CpG=rownames(vaccionationBetas), Nominal_P=visit_pvalues)
+ggplot(pvalue_dist, aes(Nominal_P))+geom_histogram(fill="grey90", color="black")+theme_bw()+xlab("Nominal P Value")
+
+## multiple test correction
+bon_pval<-p.adjust(visit_pvalues, method = "bonferroni", n = length(visit_pvalues))
+fdr_pval<-p.adjust(visit_pvalues, method = "fdr", n = length(visit_pvalues))
+
+
+stat_hits<-vaccionationBetas[which(fdr_pval<0.1),]
+dim(stat_hits)
+
+```
+
+
+## figure out a delta beta
+not sure how to decompose the random effects over the visits, so I am just going to calcuate a paired delta beta
+if a CpG has an overall sig effect of visit than can ask if they also have a large delta beta between any visits
+
+Going to test all CpGs so have deltabetas for volcano plot
+```{r}
+#Visitone compared to each visit per person
+visit_db<-lapply(1:nrow(vaccionationBetas), function(x){
+  meta_ex<-meta_vaccination
+  meta_ex$Beta<-unlist(vaccionationBetas[x,])
+
+  meta_ex$SID<-as.character(meta_ex$SID)
+  meta_ex$VisitNum<-as.character(meta_ex$VisitNum)
+  
+  mean_Betas<-tapply(meta_ex$Beta, list(meta_ex$VisitNum, meta_ex$SID), mean)
+  
+  colMeans(data.frame(Visit4dB=mean_Betas[1,]-mean_Betas[2,],
+             Visit5dB=mean_Betas[1,]-mean_Betas[3,],
+             Visit6dB=mean_Betas[1,]-mean_Betas[4,],
+             Visit7dB=mean_Betas[1,]-mean_Betas[5,]))
+})
+visit_db<-do.call(rbind, visit_db) 
+rownames(visit_db)<-rownames(stat_hits)
+
+save(visit_db, file="delta_beta_visit.RData")
+
+## max delta beta
+load("delta_beta_visit.RData")
+max_deltabeta<-sapply(1:nrow(visit_db), function(x) {
+  maxbd<-visit_db[x,][which(abs(visit_db[x,])==max(abs(visit_db[x,]),na.rm=T))]
+  if(length(maxbd)==0){NA}else{maxbd}
+  })
+
+Hit_info<-data.frame(CpG=rownames(vaccionationBetas), Nominal_P=visit_pvalues, fdr_pval=fdr_pval, max_deltabeta=max_deltabeta)
+
+stat_biohits<-Hit_info[which(abs(Hit_info$max_deltabeta)>0.05 & Hit_info$fdr_pval<=0.1),]
+```
+
+# volcano
+```{r}
+source("volcano.R")
+makeVolcano(fdr_pval, max_deltabeta, 0.05, 0.1, "DNAm Change from Initial Visit", 0.4)
+
+```
+
+
+# plot
+```{r}
+load("~/MethylationEPIC_v-1-0_B3.RData")
+meta_vaccination$Visit <- factor(meta_vaccination$Visit,c("","Day 0","Day 1 post dose 1","Day 3 post dose 1",
+                                                          "Day 7 post dose 1","Day 14 post dose 1"
+                                                          ))
+levels(meta_vaccination$Visit)<-c("","Day 0","Day 1","Day 3",
+                                                          "Day 7","Day 14")
+
+
+plt<-function(CpG){
+  Betas<-vaccionationBetas[which(rownames(vaccionationBetas)%in%CpG),]
+  Betas<-melt(Betas)
+  colnames(Betas)<-c("CpG","Sample_ID","Beta")
+  plt<-merge(Betas, meta_vaccination, by="Sample_ID")
+  
+  annotation_plt<-annotation_EPIC[which(annotation_EPIC$IlmnID%in%CpG),c("IlmnID","UCSC_RefGene_Name")]
+  uni_gene<-sapply(strsplit(as.character(annotation_plt$UCSC_RefGene_Name),";"), function(x) paste(unique(x), sep=" "))
+  annotation_plt$uni_gene<-sapply(1:length(uni_gene), function(x) paste0(uni_gene[[x]], collapse = " "))
+annotation_plt$label<-paste(annotation_plt$IlmnID, annotation_plt$uni_gene, sep = " - ")
+  
+  plt<-merge(plt, annotation_plt, by.x="CpG", by.y="IlmnID")
+  ggplot(plt, aes(Visit, Beta, group=SID, color=SID))+geom_line()+geom_point()+theme_bw()+facet_wrap(~label)+scale_color_locuszoom()+xlab("Visit")+ylab("DNAm")+ylim(0,1)+xlab("Days Post Dose 1")
+}
+
+plt(c("cg03649429","cg03736807"))
+plt(c("cg05730183","cg07806979"))
+
+order_db<-stat_biohits[rev(order(abs(stat_biohits$max_deltabeta))),]
+plt(order_db[1:4,"CpG"])
+
+order_pval<-stat_biohits[(order(abs(stat_biohits$fdr_pval))),]
+plt(order_pval[1:4,"CpG"])
+
+```
+
+
+## make a summary table
+```{r}
+load("~/MethylationEPIC_v-1-0_B3.RData")
+
+CpGs<-stat_biohits$CpG
+
+annotation_stuff<-annotation_EPIC[which(annotation_EPIC$IlmnID%in%CpGs),c("IlmnID","CHR","MAPINFO","UCSC_RefGene_Name","UCSC_RefGene_Group","UCSC_CpG_Islands_Name","Relation_to_UCSC_CpG_Island","Phantom5_Enhancers","TFBS_NAME","TFBS_Evidence_Count","DNase_Hypersensitivity_NAME","DNase_Hypersensitivity_Evidence_Count")]
+
+vaccination_stuff<-Hit_info[which(Hit_info$CpG%in%CpGs),]
+
+gene_hit_table<-merge(vaccination_stuff, annotation_stuff, by.x="CpG", by.y="IlmnID")
+
+gene_hit_table
+
+gene_hit_table$Nominal_P<-round(gene_hit_table$Nominal_P,5)
+gene_hit_table$fdr_pval<-round(gene_hit_table$fdr_pval,3)
+gene_hit_table$max_deltabeta<-round(gene_hit_table$max_deltabeta,3)
+
+write.csv(gene_hit_table, file="Visit_gene_table.csv")
+
+gene_names<-unique(unlist(strsplit(as.character(gene_hit_table$UCSC_RefGene_Name),";")))
+
+## gene specifc
+gene_hit_table[grep("COL4A3BP", gene_hit_table$UCSC_RefGene_Name),]
+gene_hit_table[grep("ABCG2", gene_hit_table$UCSC_RefGene_Name),]
+
+## representative CpGS
+plt(c("cg03649429","cg20474604","cg16432182","cg23118773","cg03736807","cg05730183"))
+
+```
+
+
+
+
+
+
+
+
+
+``` {r}
+## Should you do a numeric visit as well of instead
+levels(meta_vaccination$VisitNum)
+meta_vaccination$visitnumeric<-meta_vaccination$VisitNum
+levels(meta_vaccination$visitnumeric)<-c("","3","4","5","6","7")
+meta_vaccination$visitnumeric<-as.numeric(as.character(meta_vaccination$visitnumeric))
+
+```
+
