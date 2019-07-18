@@ -18,6 +18,6 @@ What hike should you do in the BC lower main land? Here is how hikes compared on
 
 <p align="center">
   <a href="https://github.com/redgar598/General_Analysis/tree/master/hike_plot">
-<img src="hike_plot/hikes_WCT.jpg" alt="Hikeplot" width="450" height="200">
+<img src="hike_plot/hikes_WCT.jpg" alt="Hikeplot" width="450" height="400">
   </a>
 </p>
