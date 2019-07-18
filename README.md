@@ -2,7 +2,11 @@
 Scripts, data objects and figures of general interest for 450K analysis, my life and fun stuff.
 
 
-[hikeplot](https://github.com/redgar598/General_Analysis/tree/master/hike_plot)
+
+### Hiking Comparison Plot
+
+What hike should you do in the BC lower main land? Here is how hikes compared on elevation, time distance, how steep and importantly if I have already done it. 
+[hiking plot](https://github.com/redgar598/General_Analysis/tree/master/hike_plot)
 
 
 <p align="center">
