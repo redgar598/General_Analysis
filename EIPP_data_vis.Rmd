@@ -1,6 +1,6 @@
 ---
-title: "EIPP_data_vis"
-author: "redgar"
+title: "EIPP Data Visualization"
+author: "Rachel Edgar"
 date: "18 July 2019"
 output: md_document
 ---
