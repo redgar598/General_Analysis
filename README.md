@@ -22,4 +22,4 @@ What hike should you do in the BC lower main land? Here is how hikes compared on
   </a>
 </p>
 
-[Datavis](https://github.com/redgar598/General_Analysis/blob/master/EIPP_data_vis.html)
+[Datavis](EIPP_data_vis.html)
