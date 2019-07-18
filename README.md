@@ -6,7 +6,7 @@ Lot's of the recipes have to be filled out, but the overall format is nice and p
 
 <p align="center">
   <a href="https://github.com/redgar598/General_Analysis/tree/master/Cookbook">
-<img src="https://github.com/redgar598/General_Analysis/blob/master/Cookbook/cookbooksample.JPEG" alt="Hikeplot" width="670" height="500">
+<img src="https://github.com/redgar598/General_Analysis/blob/master/Cookbook/cookbooksample.jpeg" alt="Hikeplot" width="670" height="500">
   </a>
 </p>
 
@@ -18,6 +18,6 @@ What hike should you do in the BC lower main land? Here is how hikes compared on
 
 <p align="center">
   <a href="https://github.com/redgar598/General_Analysis/tree/master/hike_plot">
-<img src="https://github.com/redgar598/General_Analysis/blob/master/hike_plot/hikes_WCT.JPG" alt="Hikeplot" width="843" height="764">
+<img src="https://github.com/redgar598/General_Analysis/blob/master/hike_plot/hikes_WCT.jpg" alt="Hikeplot" width="843" height="764">
   </a>
 </p>
