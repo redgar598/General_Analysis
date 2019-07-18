@@ -10,13 +10,6 @@ Lot's of the recipes have to be filled out, but the overall format is nice and p
   </a>
 </p>
 
-<p align="center">
-  <a href="https://github.com/redgar598/General_Analysis/tree/master/Cookbook">
-<img src="Cookbook/cookbooksample.jpeg" alt="cookbook" width="67" height="50">
-  </a>
-</p>
-
-
 
 ### Hiking Comparison Plot
 
