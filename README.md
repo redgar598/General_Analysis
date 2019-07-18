@@ -1,6 +1,14 @@
 # General_Analysis
 Scripts, data objects and figures of general interest for 450K analysis, my life and fun stuff.
 
+### A cook book layout for LaTeX
+Lot's of the recipes have to be filled out, but the overall format is nice and pages can just  be duplicated for more content. 
+
+<p align="center">
+  <a href="https://github.com/redgar598/General_Analysis/tree/master/Cookbook">
+<img src="https://github.com/redgar598/General_Analysis/blob/master/Cookbook/cookbooksample.jpeg" alt="Hikeplot" width="107" height="76">
+  </a>
+</p>
 
 
 ### Hiking Comparison Plot
