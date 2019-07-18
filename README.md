@@ -6,7 +6,7 @@ Lot's of the recipes have to be filled out, but the overall format is nice and p
 
 <p align="center">
   <a href="https://github.com/redgar598/General_Analysis/tree/master/Cookbook">
-<img src="https://github.com/redgar598/General_Analysis/blob/master/Cookbook/cookbooksample.jpeg" alt="Hikeplot" width="170" height="500">
+<img src="https://github.com/redgar598/General_Analysis/blob/master/Cookbook/cookbooksample.jpeg" alt="Hikeplot" width="670" height="500">
   </a>
 </p>
 
