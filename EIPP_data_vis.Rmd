@@ -2,7 +2,7 @@
 title: "EIPP_data_vis"
 author: "redgar"
 date: "18 July 2019"
-output: html_document
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
