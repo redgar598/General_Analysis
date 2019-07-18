@@ -6,15 +6,14 @@ Lot's of the recipes have to be filled out, but the overall format is nice and p
 
 <p align="center">
   <a href="https://github.com/redgar598/General_Analysis/tree/master/Cookbook">
-<img src="https://github.com/redgar598/General_Analysis/blob/master/Cookbook/cookbooksample.jpeg" alt="Hikeplot" width="107" height="76">
+<img src="https://github.com/redgar598/General_Analysis/blob/master/Cookbook/cookbooksample.jpeg" alt="Hikeplot" width="1070" height="760">
   </a>
 </p>
 
 
 ### Hiking Comparison Plot
 
-What hike should you do in the BC lower main land? Here is how hikes compared on elevation, time distance, how steep and importantly if I have already done it. 
-[hiking plot](https://github.com/redgar598/General_Analysis/tree/master/hike_plot)
+What hike should you do in the BC lower main land? Here is how hikes compared on elevation, time distance, how steep and importantly if I have already done it. There is data and code for this plot available [here](https://github.com/redgar598/General_Analysis/tree/master/hike_plot)
 
 
 <p align="center">
