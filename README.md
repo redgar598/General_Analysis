@@ -16,8 +16,6 @@ Lot's of the recipes have to be filled out, but the overall format is nice and p
   </a>
 </p>
 
-![Some text]({{site.url}}{{site.baseurl}}/General_Analysis/blob/master/Cookbook/cookbooksample.jpeg)
-
 
 
 ### Hiking Comparison Plot
