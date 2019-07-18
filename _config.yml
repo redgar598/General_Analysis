@@ -1,1 +1,5 @@
 theme: jekyll-theme-minimal
+
+baseurl: "/redgar598.github.io" 
+url: "https://redgar598.github.io./"
+
