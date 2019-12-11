@@ -5,16 +5,15 @@ In 2015 my boyfriend and I adopted a 10 year old cat from the BC SPCA. He was (a
 <img src="figs/IMG-20190818-WA0017_crop.jpg" width="400" height="300">
 </p>
 
-</br>
 We were wrong. His language of love is in-fact, biting. He is still the love of our lives and we find the biting gives him more personality and our lives...spontaneity. We never have kids around him, all our guests get a fair warning, and we have disinfectants ready at all times. 
 
 In 2017 we decided to track his biting. We had a few hypotheses about his behaviour and wanted data on what his deal is. 
 
 So for a year anytime we got bit we recorded it. Here is the number of bites spread over the year. In total there were 61 successfully landed bites (and many more attempts). Yes days with two bites were somber days in the home. 
 
-<p align="center">
+[<p align="center">
 <img src="figs/CalendarYear.jpeg" width="1000">
-</p>
+</p>](https://raw.githubusercontent.com/redgar598/General_Analysis/master/bites/figs/CalendarYear.jpeg)
 
 <p align="center">
 <img src="figs/Meow_1.gif" width="400" >
