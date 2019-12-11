@@ -46,7 +46,7 @@ ggplot(person_count, aes(victim, count, fill=victim))+
   theme(text = element_text(size=20)) +geom_text(aes(label=count), vjust=-0.5, size=6)+
   ylab("Total Bite Count")+xlab("Victim")+ylim(0,45)
 
-ggsave(file="bites/figs/Victim.pdf", width=5, height=5)
+ggsave(file="bites/figs/Victim.jpeg", width=5, height=5)
 
 ### Drinking overall
 drink_count<-as.data.frame(tapply(bites$Date, bites$Condition, length))
@@ -59,7 +59,7 @@ ggplot(drink_count, aes(condition, count, fill=condition))+
   theme(text = element_text(size=20)) +geom_text(aes(label=count), vjust=-1, size=6)+
   ylim(0,40)+ylab("Total Bite Count")+xlab("Condition")
 
-ggsave(file="bites/figs/Drinking.pdf", width=5, height=5)
+ggsave(file="bites/figs/Drinking.jpeg", width=5, height=5)
 
 ### Drinking and Person
 drinkvictim_count<-as.data.frame(tapply(bites$Date, list(bites$Condition, bites$Victim), length))
@@ -74,7 +74,7 @@ ggplot(drinkvictim_count, aes(variable, value, fill=col))+
   theme(text = element_text(size=20)) +geom_text(aes(label=value), vjust=-1, size=6, position = position_dodge(0.9))+
   ylim(0,28)+ylab("Total Bite Count")+xlab("Victim")
 
-ggsave(file="bites/figs/DrinkingVictim.pdf", width=10, height=5)
+ggsave(file="bites/figs/DrinkingVictim.jpeg", width=10, height=5)
 
 
 ###
@@ -88,7 +88,7 @@ ggplot(bites, aes(Time2))+
   geom_density(fill="lightgrey", size=1, adjust=1/4)+theme_bw()+
   scale_x_continuous(breaks = seq(0,2400, 300), labels = c("0:00","3:00","6:00","9:00","12:00","15:00","18:00","21:00","24:00"), name="Time")
 
-ggsave(file="bites/figs/BitingHour.pdf", width=10, height=3)
+ggsave(file="bites/figs/BitingHour.jpeg", width=10, height=3)
 
 
 ### git commit style
@@ -126,4 +126,4 @@ ggplot(dates_all, aes(week,day, fill = as.factor(bite))) +
     labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
 
-ggsave(file="bites/figs/CalendarYear.pdf", width=10, height=2)
+ggsave(file="bites/figs/CalendarYear.jpeg", width=10, height=2)
