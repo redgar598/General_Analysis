@@ -28,7 +28,7 @@ What hike should you do in the BC lower main land? Here is how hikes compared on
 ### How Much My Cat Bites 
 
 <p align="left">
-  <a href="https://github.com/redgar598/General_Analysis/tree/master/bites">
+  <a href="https://redgar598.github.io/General_Analysis/bites">
 <img src="bites/figs/arthur.png" alt="bites" width="200">
   </a>
 </p>
