@@ -29,6 +29,6 @@ What hike should you do in the BC lower main land? Here is how hikes compared on
 
 <p align="left">
   <a href="https://github.com/redgar598/General_Analysis/tree/master/bites">
-<img src="bites/figs/arthur.png" alt="bites" width="200" height="400">
+<img src="bites/figs/arthur.png" alt="bites" width="200">
   </a>
 </p>
