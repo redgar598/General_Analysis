@@ -19,35 +19,25 @@ So for a year anytime we got bit we recorded it. Here is the number of bites spr
 
 We had thought there was a biting hour in the late evening (after 10) but actually there is a peak as 9pm and bites become less frequent toward bedtime. 
 
-<p align="center">
-<img src="figs/BitingHour.jpeg" width="1000" >
-</p>
+[<img src="figs/BitingHour.jpeg" width="1000">](https://raw.githubusercontent.com/redgar598/General_Analysis/master/bites/figs/BitingHour.jpeg)
 
 
 Our main original question: who does he love more! i.e who gets more bites. We were in no way shocked. 
 
-<p align="center">
-<img src="figs/Victim.jpeg" width="300" >
-</p>
+[<img src="figs/Victim.jpeg" width="300" >](https://raw.githubusercontent.com/redgar598/General_Analysis/master/bites/figs/Victim.jpeg)
 
 We had a suspicion that whether we had had a drink would affect the number of bites. When I have had a drink I want to cuddle my cat, Arthur does not always agree. So yes drinking -> grabbing the cat -> bites.
 
-<p align="center">
-<img src="figs/Drinking.jpeg" width="300" >
-</p>
+[<img src="figs/Drinking.jpeg" width="300" >](https://raw.githubusercontent.com/redgar598/General_Analysis/master/bites/figs/Drinking.jpeg.jpeg)
 
 
 An upsetting fact for me was when I split the data by victim and drinking. A sober Rachel still gets bit more than I drinking Jack. 
 
-<p align="center">
-<img src="figs/DrinkingVictim.jpeg" width="600" >
-</p>
+[<img src="figs/DrinkingVictim.jpeg" width="600" >](https://raw.githubusercontent.com/redgar598/General_Analysis/master/bites/figs/DrinkingVictim.jpeg)
 
 Part way through the year we started to add comments for more detail on the bite context. There seems to be some fairly strong feelings in this word cloud. 
 
-<p align="center">
-<img src="figs/wordle.png" width="500" height="300">
-</p>
+[<img src="figs/wordle.png" width="500" height="300">](https://raw.githubusercontent.com/redgar598/General_Analysis/master/bites/figs/wordle.png)
 
 In conclusion, we learned a lot about Arthur and ourselves. He remains the love of our lives and continues to defend himself fiercely when necessary. 
 
