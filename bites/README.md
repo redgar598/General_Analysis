@@ -13,37 +13,37 @@ In 2017 we decided to track his biting. We had a few hypotheses about his behavi
 So for a year anytime we got bit we recorded it. Here is the number of bites spread over the year. In total there were 61 successfully landed bites (and many more attempts). Yes days with two bites were somber days in the home. 
 
 <p align="center">
-<img src="figs/CalendarYear.jpeg" width="1000" height="500">
+<img src="figs/CalendarYear.jpeg" width="1000">
 </p>
 
 <p align="center">
-<img src="figs/Meow_1.gif" width="400" height="300">
+<img src="figs/Meow_1.gif" width="400" >
 </p>
 
 We had thought there was a biting hour in the late evening (after 10) but actually there is a peak as 9pm and bites become less frequent toward bedtime. 
 
 <p align="center">
-<img src="figs/BitingHour.jpeg" width="1000" height="300">
+<img src="figs/BitingHour.jpeg" width="1000" >
 </p>
 
 
 Our main original question: who does he love more! i.e who gets more bites. We were in no way shocked. 
 
 <p align="center">
-<img src="figs/Victim.jpeg" width="300" height="300">
+<img src="figs/Victim.jpeg" width="300" >
 </p>
 
 We had a suspicion that whether we had had a drink would affect the number of bites. When I have had a drink I want to cuddle my cat, Arthur does not always agree. So yes drinking -> grabbing the cat -> bites.
 
 <p align="center">
-<img src="figs/Drinking.jpeg" width="300" height="300">
+<img src="figs/Drinking.jpeg" width="300" >
 </p>
 
 
 An upsetting fact for me was when I split the data by victim and drinking. A sober Rachel still gets bit more than I drinking Jack. 
 
 <p align="center">
-<img src="figs/DrinkingVictim.jpeg" width="600" height="300">
+<img src="figs/DrinkingVictim.jpeg" width="600" >
 </p>
 
 Part way through the year we started to add comments for more detail on the bite context. There seems to be some fairly strong feelings in this word cloud. 
