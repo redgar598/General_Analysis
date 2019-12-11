@@ -86,7 +86,7 @@ bites$Time2<-as.numeric(gsub(":","",bites$Time))
 
 ggplot(bites, aes(Time2))+
   geom_density(fill="lightgrey", size=1, adjust=1/4)+theme_bw()+
-  scale_x_continuous(breaks = seq(0,1800, 600), labels = c("0:00","6:00", "12:00", "18:00"), name="Time")
+  scale_x_continuous(breaks = seq(0,2400, 300), labels = c("0:00","3:00","6:00","9:00","12:00","15:00","18:00","21:00","24:00"), name="Time")
 
 ggsave(file="bites/figs/BitingHour.pdf", width=10, height=3)
 
