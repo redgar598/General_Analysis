@@ -11,9 +11,7 @@ In 2017 we decided to track his biting. We had a few hypotheses about his behavi
 
 So for a year anytime we got bit we recorded it. Here is the number of bites spread over the year. In total there were 61 successfully landed bites (and many more attempts). Yes days with two bites were somber days in the home. 
 
-[<p align="center">
-<img src="figs/CalendarYear.jpeg" width="1000">
-</p>](https://raw.githubusercontent.com/redgar598/General_Analysis/master/bites/figs/CalendarYear.jpeg)
+[<img src="figs/CalendarYear.jpeg" width="1000">](https://raw.githubusercontent.com/redgar598/General_Analysis/master/bites/figs/CalendarYear.jpeg)
 
 <p align="center">
 <img src="figs/Meow_1.gif" width="400" >
