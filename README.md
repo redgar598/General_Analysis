@@ -1,8 +1,8 @@
 # General_Analysis
-Scripts, data objects and figures of general interest for 450K analysis, my life and fun stuff.
+Catch all repository for side analyses and nonsense
 
 ### EIPP Data Visualization
-I am planning a project for the EIPP course on data visualization and will develop a workflow for the initial tutorial [here](EIPP_data_vis.html).
+I am planning a project for the EIPP course on data visualization and will develop a workflow for the initial tutorial [here](https://redgar598.github.io/eipp_data_viz/).
 
 ### A cook book layout for LaTeX
 Lot's of the recipes have to be filled out, but the overall format is nice and pages can just  be duplicated for more content. 
