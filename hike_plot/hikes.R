@@ -1,8 +1,9 @@
 library(ggplot2)
 
-hikes<-read.csv("~/Documents/hikes.csv")
+options(stringsAsFactors = F)
 
-hikes$steepness<-hikes$Elevation/hikes$Distance
+hikes<-read.csv("hike_plot/hikes.csv")
+
            # make neater
             hikes<-hikes[which(!(hikes$Name%in%c("Velodrome Trail","Jug Island Beach","High Note Trail","BCMC Trail","UBC Malcolm Knapp Research Forest","Petgill Lake"))),]
 
@@ -11,6 +12,16 @@ rename<-which(!(levels(hikes$Name)%in%c("Velodrome Trail","Jug Island Beach","Hi
 
             #levels(hikes$Name)<-c(levels(hikes$Name)[1:4],"Blackcomb",levels(hikes$Name)[6:9],"Bro. Crk.",
                                    # levels(hikes$Name)[11:22],"Hollyburn",levels(hikes$Name)[24:31],"Seymour",levels(hikes$Name)[33:46])
+
+
+hikes<-rbind(hikes,list("fimmvorduhals_total","Iceland",
+                        "Difficult",12,26,"July – September",0,1300,
+                        0, NA, 0))
+
+
+hikes$steepness<-hikes$Elevation/hikes$Distance
+
+
 # by steepness
 ggplot(hikes, aes(Distance, Elevation)) + 
 geom_point(aes(size=Time,
@@ -51,7 +62,7 @@ ggplot(hikes, aes(Distance, Elevation)) +
           
 library(ggplot2)
 
-hikes<-read.csv("~/Documents/hikes_WCT.csv")
+hikes<-read.csv("hike_plot/hikes_WCT.csv")
 
 hikes$steepness<-hikes$Elevation/hikes$Distance
 # make neater
@@ -59,6 +70,13 @@ hikes<-hikes[which(!(hikes$Name%in%c("Velodrome Trail","Jug Island Beach","High 
 
 rename<-which(!(levels(hikes$Name)%in%c("Velodrome Trail","Jug Island Beach","High Note Trail",
                                         "BCMC Trail","UBC Malcolm Knapp Research Forest","Petgill Lake")))
+
+hikes<-rbind(hikes,list("fimmvorduhals_total","Iceland",
+                        "Difficult",12,26,"July – September",0,1300,
+                        0, NA, 0))
+
+
+hikes$steepness<-hikes$Elevation/hikes$Distance
 
 ggplot(hikes, aes(Distance, Elevation)) + 
   geom_point(aes(size=Time,
